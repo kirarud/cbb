@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Local AI — Desktop</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="header">Чаты</div>
+      <div class="chat-list" id="chatList"></div>
+      <div class="sidebar-actions">
+        <button id="newChatBtn">Новый чат</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="model">
+          <label>Модель</label>
+          <select id="modelSelect"></select>
+        </div>
+        <div class="model">
+          <label>Источник</label>
+          <select id="sourceSelect"></select>
+        </div>
+        <div class="server-info" id="serverInfo">Сервер: …</div>
+        <div class="server-controls">
+          <button id="serverRestartBtn">Перезапустить сервер</button>
+          <button id="serverStopBtn">Выключить сервер</button>
+          <button id="showLogBtn">Лог</button>
+        </div>
+        <div class="model-add">
+          <input id="modelInput" placeholder="Добавить модель (например, llama3.1:8b)" />
+          <button id="addModelBtn">Добавить модель</button>
+          <button id="refreshModelsBtn">Обновить модели</button>
+        </div>
+        <div class="model-add">
+          <input id="sourceInput" placeholder="Добавить источник (например, Mistral)" />
+          <button id="addSourceBtn">Добавить источник</button>
+          <button id="refreshSourcesBtn">Обновить источники</button>
+        </div>
+      </div>
+
+      <div class="chat-tools">
+        <button id="pendingBtn" class="hidden">Новые сообщения</button>
+      </div>
+      <div class="mini-log hidden" id="miniLog"></div>
+      <div class="chat" id="chatView"></div>
+
+      <div class="composer">
+        <textarea id="promptInput" placeholder="Введите сообщение..."></textarea>
+        <div class="actions">
+          <button id="sendBtn">Отправить</button>
+          <button id="addBridgeBtn">Добавить ответ</button>
+          <button id="queueCheckBtn">Проверить очередь</button>
+          <button id="queueTestBtn">Тест очереди</button>
+          <button id="refreshChatBtn">Обновить чат</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="graph">
+      <div class="header">Память‑граф</div>
+      <div class="graph-controls">
+        <button id="resetGraphBtn">Сбросить граф</button>
+      </div>
+      <canvas id="graphCanvas" width="320" height="600"></canvas>
+      <div class="graph-legend">
+        <span class="dot session"></span> Сессия
+        <span class="dot global"></span> Глобальная
+      </div>
+    </aside>
+  </div>
+
+  <div class="status" id="status">Готово</div>
+  <script src="/app.js"></script>
+</body>
+</html>

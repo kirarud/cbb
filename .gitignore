@@ -1,0 +1,5 @@
+backups/
+local-bot-ui/web/data/
+__pycache__/
+*.pyc
+.DS_Store

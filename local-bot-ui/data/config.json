@@ -1,0 +1,6 @@
+{
+  "manual_models": [
+    "llama3.1:8b"
+  ],
+  "last_model": "llama3.1:8b"
+}
