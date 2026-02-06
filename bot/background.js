@@ -135,6 +135,48 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     );
     return true;
   }
+  if (msg.type === "git-snapshot") {
+    chrome.runtime.sendNativeMessage(
+      "com.localai.launcher",
+      { action: "git_snapshot" },
+      (resp) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse({ ok: true, data: resp || {} });
+        }
+      }
+    );
+    return true;
+  }
+  if (msg.type === "git-tags") {
+    chrome.runtime.sendNativeMessage(
+      "com.localai.launcher",
+      { action: "git_tags" },
+      (resp) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse({ ok: true, data: resp || {} });
+        }
+      }
+    );
+    return true;
+  }
+  if (msg.type === "git-rollback") {
+    chrome.runtime.sendNativeMessage(
+      "com.localai.launcher",
+      { action: "git_rollback", tag: msg.tag },
+      (resp) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse({ ok: true, data: resp || {} });
+        }
+      }
+    );
+    return true;
+  }
   if (msg.type === "server-status") {
     fetchWithFallback("/api/status")
       .then((r) => r.json())

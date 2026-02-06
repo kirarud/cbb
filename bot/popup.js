@@ -4,9 +4,26 @@ const restartBtn = document.getElementById("restartBtn");
 const stopBtn = document.getElementById("stopBtn");
 const openUiBtn = document.getElementById("openUiBtn");
 const togglePanelBtn = document.getElementById("togglePanelBtn");
+const snapshotBtn = document.getElementById("snapshotBtn");
+const refreshTagsBtn = document.getElementById("refreshTagsBtn");
+const rollbackBtn = document.getElementById("rollbackBtn");
+const tagsSelect = document.getElementById("tagsSelect");
+const gitLog = document.getElementById("gitLog");
+const versionsToggle = document.getElementById("versionsToggle");
+const gitPanel = document.getElementById("gitPanel");
 
 function setStatus(text) {
   statusEl.textContent = text;
+}
+
+function setGitLog(text) {
+  if (gitLog) gitLog.textContent = text;
+}
+
+function setVersionsOpen(open) {
+  if (!gitPanel || !versionsToggle) return;
+  gitPanel.classList.toggle("hidden", !open);
+  versionsToggle.textContent = open ? "Версии ▾" : "Версии ▸";
 }
 
 function send(msg) {
@@ -105,11 +122,89 @@ async function togglePanel() {
   await send({ type: "bridge-ui-toggle" });
 }
 
+async function refreshTags() {
+  setGitLog("Загрузка тегов…");
+  const res = await send({ type: "git-tags" });
+  if (!res.ok) {
+    setGitLog("Не удалось получить теги");
+    return;
+  }
+  const data = res.data || {};
+  if (data.status !== "ok") {
+    setGitLog(data.message || "Ошибка при чтении тегов");
+    return;
+  }
+  const tags = data.tags || [];
+  tagsSelect.innerHTML = "";
+  if (tags.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Тегов нет";
+    tagsSelect.appendChild(opt);
+    setGitLog("Тегов нет");
+    return;
+  }
+  tags.forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    tagsSelect.appendChild(opt);
+  });
+  setGitLog(`Тегов: ${tags.length}`);
+}
+
+async function snapshotToGithub() {
+  setGitLog("Снимок и push в GitHub…");
+  const res = await send({ type: "git-snapshot" });
+  if (!res.ok) {
+    setGitLog("Не удалось сделать снимок");
+    return;
+  }
+  const data = res.data || {};
+  if (data.status !== "ok") {
+    setGitLog(data.message || "Ошибка снимка");
+    return;
+  }
+  setGitLog(`Готово: ${data.tag || "tag"}`);
+  await refreshTags();
+}
+
+async function rollbackToTag() {
+  const tag = tagsSelect && tagsSelect.value;
+  if (!tag) {
+    setGitLog("Выберите тег");
+    return;
+  }
+  setGitLog(`Откат к ${tag}…`);
+  const res = await send({ type: "git-rollback", tag });
+  if (!res.ok) {
+    setGitLog("Не удалось откатиться");
+    return;
+  }
+  const data = res.data || {};
+  if (data.status !== "ok") {
+    setGitLog(data.message || "Ошибка отката");
+    return;
+  }
+  setGitLog(`Откат к ${tag} • backup: ${data.backup || "-"}`);
+}
+
 startBtn.onclick = startServer;
 restartBtn.onclick = restartServer;
 stopBtn.onclick = stopServer;
 openUiBtn.onclick = openUi;
 togglePanelBtn.onclick = togglePanel;
+if (snapshotBtn) snapshotBtn.onclick = snapshotToGithub;
+if (refreshTagsBtn) refreshTagsBtn.onclick = refreshTags;
+if (rollbackBtn) rollbackBtn.onclick = rollbackToTag;
+if (versionsToggle) {
+  versionsToggle.onclick = () => {
+    const open = gitPanel && gitPanel.classList.contains("hidden");
+    setVersionsOpen(open);
+  };
+}
 
 refreshStatus();
 setInterval(refreshStatus, 2000);
+refreshTags();
+setVersionsOpen(false);

@@ -11,6 +11,54 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SERVER_PATH = os.path.join(ROOT, "local-bot-ui", "web", "server.py")
 PID_PATH = os.path.join(os.path.dirname(__file__), "server.pid")
+GIT_DIR = os.path.join(ROOT, "gitstore")
+WORK_TREE = ROOT
+
+def run_git(args):
+    cmd = ["git", f"--git-dir={GIT_DIR}", f"--work-tree={WORK_TREE}"] + args
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+def git_status_dirty():
+    res = run_git(["status", "--porcelain"])
+    return res.stdout.strip() != ""
+
+def git_snapshot(push=True):
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    tag = f"stable-{ts}"
+    if git_status_dirty():
+        run_git(["add", "-A"])
+        commit = run_git(["commit", "-m", f"snapshot: {ts}"])
+        if commit.returncode != 0 and "nothing to commit" not in (commit.stdout + commit.stderr):
+            return {"status": "error", "message": commit.stderr.strip() or commit.stdout.strip()}
+    run_git(["checkout", "-B", "main"])
+    run_git(["tag", tag])
+    if push:
+        push_res = run_git(["push", "-u", "origin", "main", "--tags"])
+        if push_res.returncode != 0:
+            return {"status": "error", "message": push_res.stderr.strip() or push_res.stdout.strip(), "tag": tag}
+    return {"status": "ok", "tag": tag}
+
+def git_list_tags():
+    res = run_git(["tag", "--list", "stable-*", "--sort=-creatordate"])
+    if res.returncode != 0:
+        return {"status": "error", "message": res.stderr.strip() or res.stdout.strip(), "tags": []}
+    tags = [t.strip() for t in res.stdout.splitlines() if t.strip()]
+    return {"status": "ok", "tags": tags}
+
+def git_rollback(tag):
+    if not tag:
+        return {"status": "error", "message": "missing tag"}
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    if git_status_dirty():
+        run_git(["add", "-A"])
+        commit = run_git(["commit", "-m", f"backup before rollback {ts}"])
+        if commit.returncode != 0 and "nothing to commit" not in (commit.stdout + commit.stderr):
+            return {"status": "error", "message": commit.stderr.strip() or commit.stdout.strip()}
+    run_git(["tag", f"backup-{ts}"])
+    res = run_git(["checkout", tag])
+    if res.returncode != 0:
+        return {"status": "error", "message": res.stderr.strip() or res.stdout.strip()}
+    return {"status": "ok", "tag": tag, "backup": f"backup-{ts}"}
 
 def is_running(host="127.0.0.1", port=5050, timeout=0.3):
     try:
@@ -155,6 +203,12 @@ def main():
                 })
             else:
                 send_message({"status": "running" if is_running() else "stopped"})
+        elif action == "git_snapshot":
+            send_message(git_snapshot(push=True))
+        elif action == "git_tags":
+            send_message(git_list_tags())
+        elif action == "git_rollback":
+            send_message(git_rollback(msg.get("tag")))
         else:
             send_message({"status": "error", "message": "unknown action"})
 

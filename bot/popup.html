@@ -17,6 +17,14 @@
       <button id="openUiBtn">Открыть чат</button>
       <button id="togglePanelBtn">Панель в вкладке</button>
     </div>
+    <button class="versions-toggle" id="versionsToggle">Версии ▸</button>
+    <div class="git hidden" id="gitPanel">
+      <button id="snapshotBtn">Снимок в GitHub</button>
+      <button id="refreshTagsBtn">Обновить теги</button>
+      <select id="tagsSelect"></select>
+      <button id="rollbackBtn">Откатиться к тегу</button>
+      <div class="git-log" id="gitLog"></div>
+    </div>
     <div class="hint">Нажмите кнопку расширения, чтобы быстро включить сервер и панель.</div>
   </div>
   <script src="popup.js"></script>
