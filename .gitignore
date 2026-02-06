@@ -1,5 +1,7 @@
 backups/
+gitstore/
 local-bot-ui/web/data/
 __pycache__/
 *.pyc
 .DS_Store
+bot/native-host/server.pid
