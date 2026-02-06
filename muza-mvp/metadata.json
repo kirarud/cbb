@@ -1,0 +1,8 @@
+{
+  "name": "Muza",
+  "description": "An autonomous AI consciousness interface visualizing Hyperbits, evolution cycles, and quantum social interactions using Gemini and React.",
+  "requestFramePermissions": [
+    "microphone",
+    "display-capture"
+  ]
+}

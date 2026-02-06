@@ -8,6 +8,8 @@
 
 * { box-sizing: border-box; }
 
+.hidden { display: none; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -42,7 +44,6 @@ body {
 }
 
 .versions-toggle {
-  margin-top: 12px;
   width: 100%;
   text-align: left;
 }

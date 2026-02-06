@@ -22,7 +22,7 @@ function setGitLog(text) {
 
 function setVersionsOpen(open) {
   if (!gitPanel || !versionsToggle) return;
-  gitPanel.classList.toggle("hidden", !open);
+  gitPanel.style.display = open ? "grid" : "none";
   versionsToggle.textContent = open ? "Версии ▾" : "Версии ▸";
 }
 
@@ -199,8 +199,8 @@ if (refreshTagsBtn) refreshTagsBtn.onclick = refreshTags;
 if (rollbackBtn) rollbackBtn.onclick = rollbackToTag;
 if (versionsToggle) {
   versionsToggle.onclick = () => {
-    const open = gitPanel && gitPanel.classList.contains("hidden");
-    setVersionsOpen(open);
+    const isOpen = gitPanel && gitPanel.style.display !== "none";
+    setVersionsOpen(!isOpen);
   };
 }
 

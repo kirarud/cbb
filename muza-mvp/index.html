@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Muza: The Digital Muse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Lato:wght@300;400;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Creepster&family=Montserrat:wght@100;300;400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        /* Default Cyberpunk Values - Overridden by App.tsx */
+        --color-bg: #020617;
+        --color-primary: #22d3ee;
+        --color-secondary: #94a3b8;
+        --color-text: #e2e8f0;
+        --font-header: 'Space Grotesk', sans-serif;
+        --font-body: 'system-ui', sans-serif;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        overflow: hidden; /* Prevent body scroll */
+        transition: background-color 0.5s ease, color 0.5s ease;
+      }
+
+      /* Dynamic Theme Applications */
+      h1, h2, h3, h4, h5, h6, .font-mythic {
+        font-family: var(--font-header) !important;
+        letter-spacing: 0.05em;
+      }
+      
+      .text-cyan-400, .text-cyan-500, .text-blue-400 {
+        color: var(--color-primary) !important;
+      }
+
+      .text-purple-400, .text-pink-400 {
+         color: var(--color-secondary) !important;
+      }
+      
+      .border-cyan-500, .border-cyan-500\/30, .border-blue-500\/30 {
+         border-color: var(--color-primary) !important;
+      }
+
+      /* Background Effects */
+      .bg-noise { background-image: url('https://grainy-gradients.vercel.app/noise.svg'); }
+      .bg-stars { background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px); background-size: 550px 550px; }
+      
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.3); 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--color-secondary); 
+        border-radius: 4px;
+        opacity: 0.5;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-primary); 
+      }
+      .glass-panel {
+        background: rgba(10, 10, 26, 0.6);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "d3": "https://esm.sh/d3@^7.9.0",
+    "jszip": "https://esm.sh/jszip@3.10.1",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

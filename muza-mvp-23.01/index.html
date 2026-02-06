@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+    <title>Muza: Aura OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body { background: #050505; color: #444; font-family: sans-serif; margin: 0; }
+       /* Custom scrollbar for webkit browsers */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(10, 10, 20, 0.1);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(60, 60, 90, 0.5);
+        border-radius: 4px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      @keyframes ping-then-fade {
+        0% { transform: scale(1); opacity: 1; }
+        10% { transform: scale(1.2); opacity: 1; }
+        100% { transform: scale(1.5); opacity: 0; }
+      }
+      .animate-ping-then-fade {
+        animation: ping-then-fade 1.5s ease-out forwards;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "d3": "https://esm.sh/d3@^7.9.0",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "jszip": "https://esm.sh/jszip@^3.10.1",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
