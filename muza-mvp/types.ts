@@ -31,7 +31,7 @@ export interface HardwareState {
 // ... remaining types unchanged ...
 export type Language = 'en' | 'ru';
 
-export type ViewMode = 'FOCUS' | 'SPLIT_CODE' | 'IMMERSIVE_SPACE' | 'WIKI' | 'DEPLOY' | 'SETTINGS' | 'NEURAL_STUDIO' | 'MATRIX' | 'EVOLUTION' | 'MUSIC_LAB' | 'DESIGN_STUDIO' | 'SYNESTHESIA' | 'GENESIS_VIEW' | 'DATA_VAULT';
+export type ViewMode = 'FOCUS' | 'SPLIT_CODE' | 'IMMERSIVE_SPACE' | 'WIKI' | 'DEPLOY' | 'SETTINGS' | 'NEURAL_STUDIO' | 'MATRIX' | 'EVOLUTION' | 'MUSIC_LAB' | 'DESIGN_STUDIO' | 'SYNESTHESIA' | 'GENESIS_VIEW' | 'DATA_VAULT' | 'BRIDGE_UI' | 'LEAD_INBOX';
 
 export type AIProvider = 'GEMINI' | 'OLLAMA' | 'HYBRID' | 'USER';
 

@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lead Inbox</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --card: rgba(255, 255, 255, 0.06);
+        --stroke: rgba(255, 255, 255, 0.14);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.72);
+        --a: #7c5cff;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background: radial-gradient(900px 900px at 15% 15%, rgba(124, 92, 255, 0.22), transparent 60%),
+          linear-gradient(160deg, #07101f, var(--bg));
+        color: var(--text);
+      }
+      header {
+        padding: 18px 18px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 16px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+      button {
+        background: rgba(124, 92, 255, 0.18);
+        border: 1px solid rgba(124, 92, 255, 0.35);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+      main {
+        padding: 14px 18px 22px;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .panel {
+        border-radius: 16px;
+        border: 1px solid var(--stroke);
+        background: var(--card);
+        padding: 12px;
+      }
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+      .panel h2 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+      .field {
+        margin-top: 10px;
+      }
+      .field label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--text);
+        padding: 10px 12px;
+        font-size: 13px;
+        outline: none;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 90px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .pill {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        color: var(--muted);
+      }
+      .list {
+        display: grid;
+        gap: 10px;
+      }
+      .item {
+        border-radius: 16px;
+        border: 1px solid var(--stroke);
+        background: var(--card);
+        padding: 12px 12px;
+      }
+      .top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .who {
+        font-weight: 900;
+        font-size: 14px;
+      }
+      .who span {
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .when {
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .txt {
+        margin-top: 8px;
+        white-space: pre-wrap;
+        line-height: 1.35;
+        font-size: 14px;
+      }
+      .controls {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 10px;
+        align-items: center;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+      }
+      .dot.new {
+        background: rgba(124, 92, 255, 0.45);
+        border-color: rgba(124, 92, 255, 0.6);
+      }
+      .dot.in_progress {
+        background: rgba(245, 158, 11, 0.5);
+        border-color: rgba(245, 158, 11, 0.65);
+      }
+      .dot.paid {
+        background: rgba(34, 197, 94, 0.55);
+        border-color: rgba(34, 197, 94, 0.7);
+      }
+      .dot.done {
+        background: rgba(34, 197, 94, 0.3);
+        border-color: rgba(34, 197, 94, 0.45);
+      }
+      .dot.ignore {
+        background: rgba(239, 68, 68, 0.45);
+        border-color: rgba(239, 68, 68, 0.6);
+      }
+      .note {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 120px;
+        gap: 10px;
+        align-items: center;
+      }
+      .empty {
+        color: var(--muted);
+        border: 1px dashed rgba(255, 255, 255, 0.22);
+        border-radius: 16px;
+        padding: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Lead Inbox</h1>
+      <button id="refresh">Обновить</button>
+    </header>
+    <main>
+      <div class="meta" id="meta">—</div>
+      <div class="grid">
+        <div class="stack">
+          <div class="panel">
+            <h2>Новая заявка (ручной ввод)</h2>
+            <div class="row">
+              <div class="field">
+                <label for="platform">Канал</label>
+                <select id="platform">
+                  <option value="avito">Avito</option>
+                  <option value="vk">VK</option>
+                  <option value="telegram">Telegram</option>
+                  <option value="other">Другое</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="username">Юзернейм (опц.)</label>
+                <input id="username" placeholder="@user" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="name">Имя (опц.)</label>
+              <input id="name" placeholder="Как обращаться" />
+            </div>
+            <div class="field">
+              <label for="text">Сообщение</label>
+              <textarea id="text" placeholder="Вставь текст заявки клиента"></textarea>
+            </div>
+            <div class="field">
+              <label for="note">Заметка (опц.)</label>
+              <input id="note" placeholder="Напр: хочет срочно / ставка 1000" />
+            </div>
+            <div class="actions">
+              <button id="add">Добавить</button>
+              <button class="secondary" id="copyIntro">Скопировать “первый ответ”</button>
+            </div>
+            <div class="meta" id="stats">—</div>
+            <div class="meta">
+              Аналитика без нарушений: считай только агрегаты (сколько заявок, из какого канала, конверсия в оплату), без
+              “баз контактов”.
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Подбор вакансий</h2>
+            <div class="field">
+              <label for="cand_select">Кандидат</label>
+              <select id="cand_select"></select>
+            </div>
+            <div class="actions">
+              <button class="secondary" id="cand_refresh">Обновить список</button>
+              <button class="secondary" id="cand_load">Загрузить в форму</button>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="cand_id">ID</label>
+                <input id="cand_id" placeholder="kira" />
+              </div>
+              <div class="field">
+                <label for="cand_name">Имя</label>
+                <input id="cand_name" placeholder="Кира" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="cand_city">Город</label>
+                <input id="cand_city" placeholder="Москва" />
+              </div>
+              <div class="field">
+                <label for="cand_salary">Мин. зарплата (₽)</label>
+                <input id="cand_salary" placeholder="60000" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="cand_roles">Целевые роли (через запятую)</label>
+              <input id="cand_roles" placeholder="оператор поддержки, менеджер по работе с клиентами" />
+            </div>
+            <div class="field">
+              <label for="cand_schedule">Формат/график (через запятую)</label>
+              <input id="cand_schedule" placeholder="удаленно, гибрид, офис" />
+            </div>
+            <div class="field">
+              <label for="cand_pos">Плюс‑ключи</label>
+              <input id="cand_pos" placeholder="CRM, чат, Excel" />
+            </div>
+            <div class="field">
+              <label for="cand_neg">Минус‑ключи</label>
+              <input id="cand_neg" placeholder="вахта, холодные звонки" />
+            </div>
+            <div class="field">
+              <label for="cand_notes">Заметки</label>
+              <textarea id="cand_notes" placeholder="Важно обучение/онбординг"></textarea>
+            </div>
+            <div class="actions">
+              <button id="cand_save">Сохранить профиль</button>
+              <button class="secondary" id="cand_clear">Очистить</button>
+            </div>
+
+            <div class="field">
+              <label for="vac_source">Источник вакансии</label>
+              <select id="vac_source">
+                <option value="avito">Avito</option>
+                <option value="vk">VK</option>
+                <option value="telegram">Telegram</option>
+                <option value="site">Сайт</option>
+                <option value="manual">Другое</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="vac_url">Ссылка (опц.)</label>
+              <input id="vac_url" placeholder="https://..." />
+            </div>
+            <div class="field">
+              <label for="vac_title">Заголовок (опц.)</label>
+              <input id="vac_title" placeholder="Оператор поддержки" />
+            </div>
+            <div class="field">
+              <label for="vac_text">Текст вакансии</label>
+              <textarea id="vac_text" placeholder="Вставь описание вакансии"></textarea>
+            </div>
+            <div class="actions">
+              <button id="vac_add">Сохранить вакансию</button>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="digest_count">Кол‑во в подборке</label>
+                <input id="digest_count" value="10" />
+              </div>
+              <div class="field">
+                <label>&nbsp;</label>
+                <button id="digest_make">Сгенерировать подборку</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="digest_out">Подборка</label>
+              <textarea id="digest_out" placeholder="Нажми “Сгенерировать”" readonly></textarea>
+            </div>
+            <div class="actions">
+              <button class="secondary" id="digest_copy">Копировать подборку</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel" style="margin-bottom: 12px">
+            <h2>Быстрые шаблоны</h2>
+            <div class="actions">
+              <select id="tpl"></select>
+              <button id="copyTpl">Копировать</button>
+              <span class="pill" id="tplTitle">—</span>
+            </div>
+            <div class="field" style="margin-top:10px">
+              <label for="tplPreview">Текст шаблона</label>
+              <textarea id="tplPreview" readonly placeholder="Выбери шаблон, чтобы увидеть текст"></textarea>
+            </div>
+            <div class="actions">
+              <button class="secondary" id="tplDownload">Скачать .txt</button>
+            </div>
+          </div>
+          <div class="list" id="list"></div>
+        </div>
+      </div>
+    </main>
+    <script>
+      const $meta = document.getElementById("meta");
+      const $list = document.getElementById("list");
+      const $refresh = document.getElementById("refresh");
+      const $stats = document.getElementById("stats");
+      const $add = document.getElementById("add");
+      const $platform = document.getElementById("platform");
+      const $username = document.getElementById("username");
+      const $name = document.getElementById("name");
+      const $text = document.getElementById("text");
+      const $note = document.getElementById("note");
+      const $tpl = document.getElementById("tpl");
+      const $tplTitle = document.getElementById("tplTitle");
+      const $tplPreview = document.getElementById("tplPreview");
+      const $tplDownload = document.getElementById("tplDownload");
+      const $copyTpl = document.getElementById("copyTpl");
+      const $copyIntro = document.getElementById("copyIntro");
+      const $candSelect = document.getElementById("cand_select");
+      const $candRefresh = document.getElementById("cand_refresh");
+      const $candLoad = document.getElementById("cand_load");
+      const $candId = document.getElementById("cand_id");
+      const $candName = document.getElementById("cand_name");
+      const $candCity = document.getElementById("cand_city");
+      const $candSalary = document.getElementById("cand_salary");
+      const $candRoles = document.getElementById("cand_roles");
+      const $candSchedule = document.getElementById("cand_schedule");
+      const $candPos = document.getElementById("cand_pos");
+      const $candNeg = document.getElementById("cand_neg");
+      const $candNotes = document.getElementById("cand_notes");
+      const $candSave = document.getElementById("cand_save");
+      const $candClear = document.getElementById("cand_clear");
+      const $vacSource = document.getElementById("vac_source");
+      const $vacUrl = document.getElementById("vac_url");
+      const $vacTitle = document.getElementById("vac_title");
+      const $vacText = document.getElementById("vac_text");
+      const $vacAdd = document.getElementById("vac_add");
+      const $digestCount = document.getElementById("digest_count");
+      const $digestMake = document.getElementById("digest_make");
+      const $digestOut = document.getElementById("digest_out");
+      const $digestCopy = document.getElementById("digest_copy");
+
+      let templates = {};
+      let candidates = [];
+
+      $refresh.addEventListener("click", () => load());
+
+      function fmtWho(i) {
+        const parts = [];
+        if (i.name) parts.push(i.name);
+        if (i.username) parts.push("@" + i.username);
+        const who = parts.length ? parts.join(" ") : "Клиент";
+        return who + (i.platform ? `  ` : "");
+      }
+
+      function fmtWhen(ts) {
+        try {
+          return new Date(ts).toLocaleString();
+        } catch {
+          return ts ?? "";
+        }
+      }
+
+      async function load() {
+        const res = await fetch("/api/items?limit=200");
+        const data = await res.json();
+        const items = data.items ?? [];
+
+        $meta.textContent = `Сообщений: ${items.length}`;
+        renderStats(items);
+        $list.innerHTML = "";
+
+        if (!items.length) {
+          const d = document.createElement("div");
+          d.className = "empty";
+          d.textContent = "Пока пусто. Запусти telegram-poll и напиши боту сообщение.";
+          $list.appendChild(d);
+          return;
+        }
+
+        for (const i of items) {
+          const el = document.createElement("div");
+          el.className = "item";
+          el.innerHTML = `
+            <div class="top">
+              <div class="who">${escapeHtml(fmtWho(i))} <span>${escapeHtml(i.platform ?? "")}</span></div>
+              <div class="when">${escapeHtml(fmtWhen(i.ts))}</div>
+            </div>
+            <div class="txt">${escapeHtml(i.text ?? "")}</div>
+            <div class="controls">
+              <div class="status">
+                <span class="dot ${escapeHtml(i.status ?? "new")}"></span>
+                <select data-action="status" data-id="${escapeHtml(i.id ?? "")}">
+                  ${statusOption("new", i.status)}
+                  ${statusOption("in_progress", i.status)}
+                  ${statusOption("paid", i.status)}
+                  ${statusOption("done", i.status)}
+                  ${statusOption("ignore", i.status)}
+                </select>
+              </div>
+              <div class="actions" style="margin:0; justify-content: flex-end">
+                <button data-action="copy" data-id="${escapeHtml(i.id ?? "")}">Копировать текст</button>
+                <button data-action="intro" data-id="${escapeHtml(i.id ?? "")}">Первый ответ</button>
+                <button data-action="follow" data-id="${escapeHtml(i.id ?? "")}">Дожим</button>
+              </div>
+            </div>
+            <div class="note">
+              <input placeholder="Заметка / контекст" value="${escapeHtml(i.note ?? "")}" data-action="note" data-id="${escapeHtml(
+                i.id ?? ""
+              )}">
+              <button data-action="save" data-id="${escapeHtml(i.id ?? "")}">Сохранить</button>
+            </div>
+          `;
+          $list.appendChild(el);
+        }
+      }
+
+      async function loadCandidates({ keepSelection = true } = {}) {
+        const res = await fetch("/api/candidates");
+        const data = await res.json();
+        candidates = data.items ?? [];
+        const current = keepSelection ? $candSelect.value : "";
+        $candSelect.innerHTML = "";
+        for (const c of candidates) {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name ? `${c.name} (${c.id})` : c.id;
+          $candSelect.appendChild(opt);
+        }
+        if (candidates.length) {
+          if (current && candidates.find((c) => c.id === current)) {
+            $candSelect.value = current;
+          } else {
+            $candSelect.value = candidates[0].id;
+          }
+        }
+        const selected = candidates.find((c) => c.id === $candSelect.value);
+        if (selected) fillCandidateForm(selected);
+      }
+
+      function statusOption(value, current) {
+        const sel = value === (current ?? "new") ? "selected" : "";
+        const label =
+          value === "new"
+            ? "new"
+            : value === "in_progress"
+              ? "in progress"
+              : value === "paid"
+                ? "paid"
+                : value === "done"
+                  ? "done"
+                  : "ignore";
+        return `<option value="${value}" ${sel}>${label}</option>`;
+      }
+
+      function renderStats(items) {
+        const byPlatform = new Map();
+        const byStatus = new Map();
+        for (const i of items) {
+          const p = i.platform ?? "unknown";
+          byPlatform.set(p, (byPlatform.get(p) ?? 0) + 1);
+          const s = i.status ?? "new";
+          byStatus.set(s, (byStatus.get(s) ?? 0) + 1);
+        }
+        const topPlatform = [...byPlatform.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+        const topStatus = [...byStatus.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+        $stats.textContent =
+          `Каналы: ${topPlatform.map(([k, v]) => `${k}:${v}`).join("  ")}  |  ` +
+          `Статусы: ${topStatus.map(([k, v]) => `${k}:${v}`).join("  ")}`;
+      }
+
+      async function loadTemplates() {
+        const res = await fetch("/api/templates");
+        templates = await res.json();
+        $tpl.innerHTML = "";
+        const ids = Object.keys(templates);
+        for (const id of ids) {
+          const t = templates[id];
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = t?.title ? t.title : id;
+          $tpl.appendChild(opt);
+        }
+        const first = ids[0] || "";
+        if (first) $tpl.value = first;
+        $tplTitle.textContent = templates[first]?.title ?? "—";
+        $tplPreview.value = templates[first]?.text ?? "";
+      }
+
+      $tpl.addEventListener("change", () => {
+        const id = $tpl.value;
+        $tplTitle.textContent = templates[id]?.title ?? "—";
+        $tplPreview.value = templates[id]?.text ?? "";
+      });
+
+      $copyTpl.addEventListener("click", async () => {
+        const id = $tpl.value;
+        await copyText(String(templates[id]?.text ?? ""));
+      });
+
+      $tplDownload.addEventListener("click", () => {
+        const id = $tpl.value;
+        const text = String(templates[id]?.text ?? "");
+        const title = (templates[id]?.title ?? id).replace(/[\\/:*?\"<>|]/g, "-");
+        const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      $copyIntro.addEventListener("click", async () => {
+        await copyText(String(templates["intro"]?.text ?? ""));
+      });
+
+      $add.addEventListener("click", async () => {
+        const payload = {
+          platform: $platform.value,
+          username: $username.value.trim() || null,
+          name: $name.value.trim() || null,
+          text: $text.value.trim() || "",
+          note: $note.value.trim() || null,
+        };
+        if (!payload.text) return;
+        await fetch("/api/message", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+        $text.value = "";
+        $note.value = "";
+        await load();
+      });
+
+      $candRefresh.addEventListener("click", async () => {
+        await loadCandidates({ keepSelection: true });
+      });
+
+      $candSelect.addEventListener("change", () => {
+        const id = $candSelect.value;
+        const c = candidates.find((x) => x.id === id);
+        if (c) fillCandidateForm(c);
+      });
+
+      $candLoad.addEventListener("click", () => {
+        const id = $candSelect.value;
+        const c = candidates.find((x) => x.id === id);
+        if (c) fillCandidateForm(c);
+      });
+
+      $candSave.addEventListener("click", async () => {
+        const payload = {
+          id: $candId.value.trim(),
+          name: $candName.value.trim(),
+          city: $candCity.value.trim(),
+          salary_min_rub: $candSalary.value.trim(),
+          role_targets: $candRoles.value,
+          schedule: $candSchedule.value,
+          keywords_positive: $candPos.value,
+          keywords_negative: $candNeg.value,
+          notes: $candNotes.value,
+        };
+        if (!payload.id) return;
+        await fetch("/api/candidate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        await loadCandidates({ keepSelection: false });
+        $candSelect.value = payload.id;
+      });
+
+      $candClear.addEventListener("click", () => {
+        fillCandidateForm({});
+      });
+
+      $vacAdd.addEventListener("click", async () => {
+        const payload = {
+          source: $vacSource.value,
+          url: $vacUrl.value.trim(),
+          title: $vacTitle.value.trim(),
+          text: $vacText.value.trim(),
+        };
+        if (!payload.text && !payload.url) return;
+        await fetch("/api/vacancy", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        $vacText.value = "";
+        $vacTitle.value = "";
+        $vacUrl.value = "";
+      });
+
+      $digestMake.addEventListener("click", async () => {
+        const candidateId = $candSelect.value || $candId.value.trim();
+        if (!candidateId) return;
+        const count = Number($digestCount.value || "10");
+        const res = await fetch("/api/digest", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ candidate_id: candidateId, count }),
+        });
+        const data = await res.json();
+        $digestOut.value = data.text ?? "";
+      });
+
+      $digestCopy.addEventListener("click", async () => {
+        await copyText($digestOut.value);
+      });
+
+      $list.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (!action || !id) return;
+
+        if (action === "copy") {
+          const item = await findItem(id);
+          await copyText(String(item?.text ?? ""));
+          return;
+        }
+        if (action === "intro") {
+          await copyText(String(templates["intro"]?.text ?? ""));
+          return;
+        }
+        if (action === "follow") {
+          await copyText(String(templates["follow_up"]?.text ?? ""));
+          return;
+        }
+        if (action === "save") {
+          const input = document.querySelector(`input[data-action="note"][data-id="${cssEscape(id)}"]`);
+          const note = input?.value ?? "";
+          const sel = document.querySelector(`select[data-action="status"][data-id="${cssEscape(id)}"]`);
+          const status = sel?.value ?? "new";
+          await fetch("/api/update", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id, note, status }),
+          });
+          await load();
+        }
+      });
+
+      $list.addEventListener("change", async (e) => {
+        const sel = e.target.closest("select");
+        if (!sel) return;
+        if (sel.dataset.action !== "status") return;
+        const id = sel.dataset.id;
+        const status = sel.value;
+        await fetch("/api/update", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id, status }),
+        });
+        await load();
+      });
+
+      async function findItem(id) {
+        const res = await fetch("/api/items?limit=5000");
+        const data = await res.json();
+        return (data.items ?? []).find((i) => String(i.id) === String(id));
+      }
+
+      function fillCandidateForm(c) {
+        $candId.value = c.id ?? "";
+        $candName.value = c.name ?? "";
+        $candCity.value = c.city ?? "";
+        $candSalary.value = c.salary_min_rub ?? "";
+        $candRoles.value = (c.role_targets ?? []).join(", ");
+        $candSchedule.value = (c.schedule ?? []).join(", ");
+        $candPos.value = (c.keywords_positive ?? []).join(", ");
+        $candNeg.value = (c.keywords_negative ?? []).join(", ");
+        $candNotes.value = c.notes ?? "";
+      }
+      async function copyText(text) {
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          // ignore
+        }
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function cssEscape(s) {
+        return String(s).replaceAll('"', '\\"');
+      }
+
+      loadTemplates();
+      loadCandidates({ keepSelection: false });
+      load();
+      setInterval(load, 6000);
+    </script>
+  </body>
+</html>

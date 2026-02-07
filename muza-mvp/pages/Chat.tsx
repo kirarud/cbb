@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Mic, StopCircle, Headphones, Server, Cloud, Cpu, Paperclip, X, FileText, Image as ImageIcon, Square, Settings, Save, Play, Music, Link, Copy, PlusCircle, MessageSquare, Shuffle, Download, Layers, Maximize2, Minimize2, Brain, Zap, Feather, Shield, Terminal } from 'lucide-react';
+import { Send, Mic, StopCircle, Headphones, Server, Cloud, Cpu, Paperclip, X, FileText, Image as ImageIcon, Square, Settings, Save, Play, Music, Link, Copy, PlusCircle, MessageSquare, Shuffle, Download, Layers, Maximize2, Minimize2, Brain, Zap, Feather, Shield, Terminal, Quote, Trash2 } from 'lucide-react';
 import { ChatMessage, MuzaState, HyperBit, Language, Attachment, ResonanceMode, ConsciousnessType, ConversationThread, DetailLevel, MuzaCommand, UserSkill, SubThought, EmotionType } from '../types';
 import { generateMuzaResponse } from '../services/geminiService';
 import { EMOTION_LABELS, TRANSLATIONS, RESONANCE_LABELS, RESONANCE_DESCRIPTIONS } from '../constants';
 import { MuzaAvatar } from '../components/MuzaAvatar';
 import { CodeBlock } from '../components/CodeBlock';
-import { Tooltip } from '../components/Tooltip';
 import { synthService } from '../services/synthService';
 import { encodeQuantumLink, decodeQuantumLink } from '../services/bridgeService';
 import { muzaAIService } from '../services/muzaAIService';
 import JSZip from 'jszip';
+import { Tooltip } from '../components/Tooltip';
 
 interface ChatProps {
   muzaState: MuzaState;
@@ -17,6 +17,7 @@ interface ChatProps {
   addHyperbit: (hb: HyperBit, award?: { title: string, description: string, icon: string }) => void;
   messages: ChatMessage[];
   addMessage: (msg: ChatMessage) => void;
+  setMessages?: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   language: Language;
   onThinkingChange?: (isThinking: boolean) => void;
   onCommand?: (cmd: MuzaCommand) => void; 
@@ -30,6 +31,7 @@ export const Chat: React.FC<ChatProps> = ({
     addHyperbit, 
     messages, 
     addMessage, 
+    setMessages,
     language,
     onThinkingChange,
     onCommand
@@ -40,6 +42,8 @@ export const Chat: React.FC<ChatProps> = ({
   const [latestUserSkill, setLatestUserSkill] = useState<{name: string, level: number} | null>(null); 
   const [isThreadsOpen, setIsThreadsOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [showNewBadge, setShowNewBadge] = useState(false);
   
   // Voice & Interaction State
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
@@ -51,6 +55,7 @@ export const Chat: React.FC<ChatProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const voiceStateRef = useRef<VoiceState>('IDLE'); 
   const isLiveModeRef = useRef(false);
@@ -70,7 +75,26 @@ export const Chat: React.FC<ChatProps> = ({
   useEffect(() => { voiceStateRef.current = voiceState; }, [voiceState]);
   useEffect(() => { isLiveModeRef.current = isLiveMode; }, [isLiveMode]);
   useEffect(() => { onThinkingChange?.(isProcessing); }, [isProcessing, onThinkingChange]);
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isProcessing, latestAward, latestUserSkill]);
+  useEffect(() => { 
+    if (autoScroll) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+    else setShowNewBadge(true);
+  }, [messages, isProcessing, latestAward, latestUserSkill, autoScroll]);
+
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+      if (nearBottom) {
+        setAutoScroll(true);
+        setShowNewBadge(false);
+      } else {
+        setAutoScroll(false);
+      }
+    };
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
 
   // --- Threads Management ---
   const currentThread = muzaState.threads?.find(t => t.id === muzaState.activeThreadId) || { id: 'default', name: isRu ? 'Основной' : 'Main', messages: [] };
@@ -110,6 +134,27 @@ export const Chat: React.FC<ChatProps> = ({
   const handleDetailLevel = (level: DetailLevel) => {
       setMuzaState(prev => ({ ...prev, detailLevel: level }));
       setIsDetailOpen(false);
+  };
+
+  const handleCopy = async (text: string) => {
+      try { await navigator.clipboard.writeText(text); } catch {}
+  };
+
+  const handleQuote = (text: string) => {
+      setInput(prev => `${prev ? prev + '\n\n' : ''}> ${text.replace(/\n/g, '\n> ')}\n`);
+  };
+
+  const handleDelete = (id: string) => {
+      if (setMessages) {
+          setMessages(prev => prev.filter(m => m.id !== id));
+      }
+      setMuzaState(prev => ({
+          ...prev,
+          threads: (prev.threads || []).map(t => t.id === prev.activeThreadId
+            ? { ...t, messages: (t.messages || []).filter(m => m.id !== id) }
+            : t
+          )
+      }));
   };
 
   // --- File Handling ---
@@ -409,29 +454,29 @@ export const Chat: React.FC<ChatProps> = ({
   return (
     <div className="flex flex-col h-full bg-slate-950/50 relative">
         {/* Header */}
-        <div className="px-3 py-2 border-b border-slate-800 flex justify-between items-center bg-slate-950/80 backdrop-blur-md z-10">
-            <div className="flex items-center gap-3">
+        <div className="px-3 py-1.5 border-b border-slate-800 flex justify-between items-center bg-slate-950/80 backdrop-blur-md z-10">
+            <div className="flex items-center gap-2">
                 <Tooltip content={isRu ? `Индикатор состояния: ${statusLabel}` : `State indicator: ${statusLabel}`} position="bottom">
                     <div>
                         <MuzaAvatar 
                             emotion={muzaState.activeEmotion} 
                             isThinking={isProcessing} 
                             isSpeaking={voiceState === 'SPEAKING'} 
-                            scale={0.35} 
+                            scale={0.28} 
                         />
                     </div>
                 </Tooltip>
-                <div>
-                    <h2 className="text-white font-semibold text-xs flex items-center gap-2">
-                        {isRu ? 'МУЗА' : 'MUZA'} {RESONANCE_LABELS[language][muzaState.activeMode]}
+                <div className="flex flex-col">
+                    <h2 className="text-white font-semibold text-[11px] flex items-center gap-2 leading-tight">
+                        <span className="uppercase tracking-wide">{isRu ? 'Муза' : 'Muza'}</span>
+                        <span className="text-slate-300">{RESONANCE_LABELS[language][muzaState.activeMode]}</span>
                         <span className="text-[9px] text-slate-500 border border-slate-700 px-1 rounded">v2025.Nero</span>
                     </h2>
                     <div className="flex items-center gap-2 text-[9px] text-slate-400">
                         <span>{EMOTION_LABELS[language][muzaState.activeEmotion]}</span>
                         <span>•</span>
                         <span>{statusLabel}</span>
-                        <span>•</span>
-                        <span>{isRu ? 'Энергия' : 'Energy'}: {(muzaState.energyLevel * 100).toFixed(0)}%</span>
+                        <span className="hidden sm:inline">• {isRu ? 'Энергия' : 'Energy'}: {(muzaState.energyLevel * 100).toFixed(0)}%</span>
                     </div>
                 </div>
             </div>
@@ -440,20 +485,20 @@ export const Chat: React.FC<ChatProps> = ({
                 <Tooltip content={isLiveMode ? (isRu ? "Остановить живой режим" : "Stop Live") : (isRu ? "Запустить живой режим" : "Start Live")} position="bottom">
                     <button 
                         onClick={toggleLiveMode}
-                        className={`p-1.5 rounded-full transition-all ${isLiveMode ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                        className={`p-1 rounded-full transition-all ${isLiveMode ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                     >
                         {isLiveMode ? <Mic className="w-4 h-4" /> : <Headphones className="w-4 h-4" />}
                     </button>
                 </Tooltip>
                 
                 <Tooltip content={t.threads} position="bottom">
-                    <button onClick={() => setIsThreadsOpen(!isThreadsOpen)} className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
+                    <button onClick={() => setIsThreadsOpen(!isThreadsOpen)} className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
                         <Layers className="w-4 h-4" />
                     </button>
                 </Tooltip>
 
                  <div className="relative">
-                    <button onClick={() => setIsDetailOpen(!isDetailOpen)} className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1">
+                    <button onClick={() => setIsDetailOpen(!isDetailOpen)} className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1">
                         <Brain className="w-4 h-4" />
                         <span className="text-[10px]">{muzaState.detailLevel.slice(0,1)}</span>
                     </button>
@@ -471,7 +516,17 @@ export const Chat: React.FC<ChatProps> = ({
         </div>
 
         {/* Message Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 relative custom-scrollbar">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-6 relative custom-scrollbar">
+            {showNewBadge && !autoScroll && (
+                <div className="sticky top-2 z-20 flex justify-center">
+                    <button
+                        onClick={() => { setAutoScroll(true); setShowNewBadge(false); messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }}
+                        className="px-3 py-1 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 backdrop-blur"
+                    >
+                        {isRu ? 'Новые сообщения' : 'New messages'}
+                    </button>
+                </div>
+            )}
             {messages.map((msg, idx) => {
                 const isUser = msg.sender === 'User';
                 const senderLabel = msg.sender === 'User'
@@ -505,7 +560,7 @@ export const Chat: React.FC<ChatProps> = ({
                                 </div>
 
                                 <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                                    isUser ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-100 rounded-tr-sm' : 'bg-slate-800/50 border border-slate-700 text-slate-200 rounded-tl-sm'
+                                    isUser ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-100 rounded-tr-sm border-r-4 border-r-indigo-500/60' : 'bg-slate-800/50 border border-slate-700 text-slate-200 rounded-tl-sm border-l-4 border-l-cyan-500/60'
                                 }`}>
                                     {msg.text.includes('```') ? (
                                         msg.text.split('```').map((part, i) => {
@@ -522,6 +577,23 @@ export const Chat: React.FC<ChatProps> = ({
                                              </div>
                                         ) : msg.text
                                     )}
+                                </div>
+                                <div className={`flex gap-2 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                                    <Tooltip content={isRu ? "Скопировать" : "Copy"} position="top">
+                                        <button onClick={() => handleCopy(msg.text)} className="p-1 rounded bg-slate-800/40 text-slate-400 hover:text-white">
+                                            <Copy className="w-3 h-3" />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content={isRu ? "Цитировать" : "Quote"} position="top">
+                                        <button onClick={() => handleQuote(msg.text)} className="p-1 rounded bg-slate-800/40 text-slate-400 hover:text-white">
+                                            <Quote className="w-3 h-3" />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content={isRu ? "Удалить" : "Delete"} position="top">
+                                        <button onClick={() => handleDelete(msg.id)} className="p-1 rounded bg-slate-800/40 text-slate-400 hover:text-red-300">
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </div>

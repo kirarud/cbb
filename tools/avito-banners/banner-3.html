@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Banner 3</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --card: rgba(255, 255, 255, 0.07);
+        --stroke: rgba(255, 255, 255, 0.14);
+        --text: #eaf0ff;
+        --muted: rgba(234, 240, 255, 0.78);
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --accent: #60a5fa;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: radial-gradient(1000px 850px at 15% 10%, rgba(96, 165, 250, 0.25), transparent 60%),
+          radial-gradient(900px 900px at 85% 75%, rgba(34, 197, 94, 0.18), transparent 60%),
+          linear-gradient(160deg, #07101f, var(--bg));
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        color: var(--text);
+      }
+
+      .frame {
+        width: 1080px;
+        height: 1080px;
+        padding: 68px;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+      }
+
+      .title {
+        font-size: 66px;
+        line-height: 1;
+        letter-spacing: -1.2px;
+        font-weight: 1000;
+        margin: 0;
+      }
+
+      .title b {
+        color: rgba(96, 165, 250, 0.95);
+      }
+
+      .tag {
+        border-radius: 16px;
+        padding: 12px 14px;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+        background: rgba(96, 165, 250, 0.12);
+        font-weight: 950;
+        text-align: right;
+        min-width: 250px;
+      }
+
+      .tag small {
+        display: block;
+        margin-top: 6px;
+        font-weight: 800;
+        color: rgba(234, 240, 255, 0.78);
+        font-size: 14px;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        flex: 1;
+        align-content: start;
+      }
+
+      .panel {
+        border-radius: 24px;
+        background: var(--card);
+        border: 1px solid var(--stroke);
+        padding: 22px 22px;
+        min-height: 330px;
+      }
+
+      .panel h2 {
+        margin: 0 0 16px;
+        font-size: 22px;
+        letter-spacing: 0.2px;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+
+      .list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 12px;
+      }
+
+      .li {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        margin-top: 3px;
+        flex: 0 0 auto;
+      }
+
+      .icon.ok {
+        background: rgba(34, 197, 94, 0.18);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+      }
+
+      .icon.warn {
+        background: rgba(245, 158, 11, 0.14);
+        border: 1px solid rgba(245, 158, 11, 0.32);
+      }
+
+      .li b {
+        display: block;
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+
+      .li span {
+        display: block;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.25;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 18px;
+      }
+
+      .cta {
+        border-radius: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(0, 0, 0, 0.2);
+        padding: 18px 22px;
+        font-weight: 1000;
+        font-size: 22px;
+      }
+
+      .cta small {
+        display: block;
+        margin-top: 6px;
+        color: rgba(234, 240, 255, 0.78);
+        font-weight: 800;
+        font-size: 16px;
+      }
+
+      .mini {
+        text-align: right;
+        color: rgba(234, 240, 255, 0.7);
+        font-size: 14px;
+        line-height: 1.25;
+        max-width: 460px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <div class="header">
+        <h1 class="title">
+          Резюме<br />
+          <b>за 60–90 минут</b>
+        </h1>
+        <div class="tag">
+          1000 ₽ сегодня
+          <small>оплата СБП • через чат Авито</small>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="panel">
+          <h2 style="color: rgba(34, 197, 94, 0.95)">Что сделаю</h2>
+          <ul class="list">
+            <li class="li">
+              <span class="icon ok"></span>
+              <div>
+                <b>Усилю опыт</b>
+                <span>Коротко и по делу: задачи → результат → цифры (если есть).</span>
+              </div>
+            </li>
+            <li class="li">
+              <span class="icon ok"></span>
+              <div>
+                <b>Под вакансию</b>
+                <span>Подберу навыки и формулировки под конкретную должность.</span>
+              </div>
+            </li>
+            <li class="li">
+              <span class="icon ok"></span>
+              <div>
+                <b>Оформлю</b>
+                <span>Чистый дизайн, читабельно с телефона. PDF/DOC.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="panel">
+          <h2 style="color: rgba(245, 158, 11, 0.98)">Чего не будет</h2>
+          <ul class="list">
+            <li class="li">
+              <span class="icon warn"></span>
+              <div>
+                <b>Оплат “за доступ”</b>
+                <span>Только обычный перевод по СБП после согласования.</span>
+              </div>
+            </li>
+            <li class="li">
+              <span class="icon warn"></span>
+              <div>
+                <b>Лишней “воды”</b>
+                <span>Без общих фраз — только то, что помогает пройти отбор.</span>
+              </div>
+            </li>
+            <li class="li">
+              <span class="icon warn"></span>
+              <div>
+                <b>Публикации телефона</b>
+                <span>Работаю через чат Авито, чтобы было безопасно.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="cta">
+          Напишите в Авито
+          <small>пришлите вакансию + опыт — начну сразу</small>
+        </div>
+        <div class="mini">
+          Включено: резюме + сопроводительное.<br />
+          1 правка включена.<br />
+          Срок обычно 60–90 минут.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

@@ -279,7 +279,23 @@ export const TRANSLATIONS = {
       identitiesDetected: (count: number) => `${count} IDENTITIES DETECTED`,
       loginAs: (name: string) => `LOGIN AS ${name.toUpperCase()}`
     },
-    nav: { chat: 'Chat', space: 'Space', social: 'Network', profile: 'Profile', voice: 'Voice', codelab: 'Code', wiki: 'Wiki', deploy: 'Export', insights: 'Insights', logout: 'Logout', design: 'Design', music: 'Music', matrix: 'Matrix', neural: 'Neural', settings: 'Settings', synesthesia: 'Synesthesia', vault: 'Chronicles' },
+    nav: {
+      chat: 'Диалог',
+      profile: 'Эволюция',
+      music: 'Музыка',
+      codelab: 'Код',
+      deploy: 'Развёртывание',
+      vault: 'Хроники',
+      space: 'Пространство',
+      matrix: 'Матрица',
+      design: 'Дизайн',
+      neural: 'Нейро‑Студия',
+      synesthesia: 'Синестезия',
+      settings: 'Конфигурация',
+      wiki: 'База',
+      bridge: 'Мост',
+      leads: 'Заявки'
+    },
     chat: {
       emotion: 'Emotion',
       energy: 'Energy',
@@ -334,7 +350,7 @@ export const TRANSLATIONS = {
     wiki: { title: 'Wiki', intro: 'Intro', sections: { intro: {title:'Intro', content:'...'}, quantum: {title:'Quantum', content:'...'}, hyperbits: {title:'Hyperbits', content:'...'}, personas: {title:'Personas', content:'...'} } },
     tooltips: {
         voice: 'Voice', upload: 'Upload', send: 'Send', mode: 'Mode', codeRun: 'Run', clipboard: 'Paste',
-        nav_chat: 'Chat', nav_space: 'Space', nav_codelab: 'Code', nav_wiki: 'Wiki', nav_deploy: 'Deploy', nav_vault: 'Chronicles',
+        nav_chat: 'Chat', nav_space: 'Space', nav_codelab: 'Code', nav_wiki: 'Wiki', nav_deploy: 'Deploy', nav_vault: 'Chronicles', nav_bridge: 'Bridge UI', nav_leads: 'Lead inbox',
         nav_synesthesia: 'Audio-Visual Core', nav_design: 'Design Studio', nav_profile: 'Evolution Profile', nav_music: 'Music Lab',
         nav_matrix: 'Matrix Vision', nav_neural: 'Neural Studio', nav_settings: 'Configuration',
         clearLogs: 'Clear', filePreview: 'File', liveMode: 'Live', stopSpeaking: 'Stop', stopGeneration: 'Stop', merge: 'Merge'
@@ -373,9 +389,14 @@ export const TRANSLATIONS = {
       noData: 'No memory nodes yet. Start a dialogue to feed the core.'
     },
     systemMonitor: {
-      tabs: { hardware: 'HW', kernel: 'KERNEL', logs: 'LOGS' },
+      tabs: { hardware: 'HW', kernel: 'KERNEL', logs: 'LOGS', bridge: 'BRIDGE' },
       kernelTitle: 'Active Virtual Threads',
-      logsEmpty: 'Boot sequence initiated...',
+      
+      bridgeTitle: 'Local Bridge',
+      bridgeStatusOnline: 'ONLINE',
+      bridgeStatusOffline: 'OFFLINE',
+      bridgeOpen: 'Open Bridge UI',
+      bridgeRefresh: 'Refresh',
       labels: {
         cpu: 'CPU',
         gpuLoad: 'GPU Load',
@@ -514,7 +535,8 @@ export const TRANSLATIONS = {
       neural: 'Нейро‑студия',
       settings: 'Конфигурация',
       synesthesia: 'Синестезия',
-      vault: 'Хроники'
+      vault: 'Хроники',
+      bridge: 'Мост'
     },
     chat: {
       emotion: 'Состояние',
@@ -582,6 +604,15 @@ export const TRANSLATIONS = {
         status: { idle: 'ГОТОВ', building: 'СБОРКА...', complete: 'ЗАВЕРШЕНО', error: 'ОШИБКА' },
         logs: 'Лог Операций'
     },
+    bridge: {
+        title: 'Локальный мост',
+        subtitle: 'Интерфейс локального UI (127.0.0.1:5050)',
+        status: { online: 'Онлайн', offline: 'Нет связи', checking: 'Проверка...' },
+        open: 'Открыть в новой вкладке',
+        refresh: 'Проверить',
+        url: 'Адрес',
+        hint: 'Если экран пустой — запустите локальный сервер UI.'
+    },
     wiki: {
         title: 'Архивы Нексуса', intro: 'Документация по взаимодействию с системой.',
         sections: {
@@ -595,7 +626,7 @@ export const TRANSLATIONS = {
         voice: 'Голосовой Ввод', upload: 'Загрузить Файл', send: 'Отправить', mode: 'Выбрать Резонанс',
         codeRun: 'Запустить Код', clipboard: 'Вставить из Буфера', nav_chat: 'Основной канал связи',
         nav_space: '3D карта мыслей', nav_codelab: 'Среда разработки', nav_wiki: 'Справка и философия',
-        nav_deploy: 'Сохранение данных', nav_vault: 'Хроники',
+        nav_deploy: 'Сохранение данных', nav_vault: 'Хроники', nav_bridge: 'Мост',
         nav_synesthesia: 'Аудио‑визуальное ядро', nav_design: 'Студия дизайна', nav_profile: 'Профиль эволюции', nav_music: 'Музыкальная лаборатория',
         nav_matrix: 'Матричное зрение', nav_neural: 'Нейро‑студия', nav_settings: 'Конфигурация',
         clearLogs: 'Очистить', filePreview: 'Удалить файл', liveMode: 'Живой разговор',
@@ -635,9 +666,14 @@ export const TRANSLATIONS = {
         noData: 'Нет узлов памяти. Начните диалог, чтобы наполнить ядро.'
     },
     systemMonitor: {
-        tabs: { hardware: 'ЖЕЛЕЗО', kernel: 'ЯДРО', logs: 'ЛОГИ' },
+        tabs: { hardware: 'ЖЕЛЕЗО', kernel: 'ЯДРО', logs: 'ЛОГИ', bridge: 'МОСТ' },
         kernelTitle: 'Активные виртуальные потоки',
-        logsEmpty: 'Инициализация ядра...',
+        
+        bridgeTitle: 'Локальный мост',
+        bridgeStatusOnline: 'ОНЛАЙН',
+        bridgeStatusOffline: 'НЕТ СВЯЗИ',
+        bridgeOpen: 'Открыть мост',
+        bridgeRefresh: 'Обновить',
         labels: {
             cpu: 'ЦП',
             gpuLoad: 'НАГРУЗКА ГП',

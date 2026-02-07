@@ -9,24 +9,45 @@ import {
   forceCollide, 
   drag,
   forceX,
-  forceY
+  forceY,
+  zoom,
+  zoomIdentity,
+  line
 } from 'd3';
 import { HyperBit, Language } from '../types';
 import { TYPE_COLORS, TRANSLATIONS } from '../constants';
-import { Database, Clock, Network, Search, Layers } from 'lucide-react';
+import { Database, Clock, Network, Search, Layers, Infinity, CirclePlay, CirclePause } from 'lucide-react';
 
 interface SpaceProps {
   hyperbits: HyperBit[];
   language: Language;
 }
 
-type VisualMode = 'NETWORK' | 'SEMANTIC_CLUSTERS' | 'TIMELINE';
+type VisualMode = 'NETWORK' | 'SEMANTIC_CLUSTERS' | 'TIMELINE' | 'OUROBOROS';
 
 export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mode, setMode] = useState<VisualMode>('NETWORK');
   const [search, setSearch] = useState('');
+  const [timeProgress, setTimeProgress] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
   const t = TRANSLATIONS[language].space;
+  const isTimeMode = mode === 'TIMELINE' || mode === 'OUROBOROS';
+
+  useEffect(() => {
+    if (!isTimeMode) setIsPlaying(false);
+  }, [isTimeMode]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const timer = setInterval(() => {
+      setTimeProgress((prev) => {
+        const next = prev + 0.008;
+        return next > 1 ? 0 : next;
+      });
+    }, 60);
+    return () => clearInterval(timer);
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!svgRef.current || hyperbits.length === 0) return;
@@ -37,7 +58,20 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
     select(svgRef.current).selectAll("*").remove();
 
     const svg = select(svgRef.current)
-      .attr("viewBox", [0, 0, width, height]);
+      .attr("viewBox", [0, 0, width, height])
+      .style("cursor", "grab");
+
+    const viewport = svg.append("g").attr("class", "viewport");
+    const zoomBehavior = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.4, 2.8])
+      .on("zoom", (event) => {
+        viewport.attr("transform", event.transform);
+      });
+
+    svg.call(zoomBehavior as any);
+    svg.on("dblclick", () => {
+      svg.transition().duration(250).call(zoomBehavior.transform, zoomIdentity);
+    });
 
     // --- MODE: SEMANTIC_CLUSTERS (v3.0) ---
     if (mode === 'SEMANTIC_CLUSTERS') {
@@ -61,16 +95,24 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
             .force("x", forceX((d: any) => centers[d.type]?.x || width/2).strength(0.1))
             .force("y", forceY((d: any) => centers[d.type]?.y || height/2).strength(0.1));
 
-         const node = svg.append("g")
+         const node = viewport.append("g")
             .selectAll("circle")
             .data(nodes)
             .join("circle")
-            .attr("r", 8)
+            .attr("r", (d: any) => 6 + Math.max(0, Math.min(1, d.energy || 0.3)) * 10)
             .attr("fill", (d: any) => TYPE_COLORS[d.type as keyof typeof TYPE_COLORS])
-            .attr("opacity", 0.8);
+            .attr("opacity", (d: any) => 0.4 + Math.max(0.2, Math.min(1, d.energy || 0.4)));
             
+         node.append("title").text((d: any) => d.content || '');
+
+         node.on("click", (_event: any, d: any) => {
+            if (!d || !d.content) return;
+            const detail = `«${d.content}»\n${language === 'ru' ? 'Энергия' : 'Energy'}: ${Math.round((d.energy || 0) * 100)}% • ${d.type}`;
+            const hint = language === 'ru' ? 'Узел' : 'Node';
+            window.dispatchEvent(new CustomEvent('muza:node:focus', { detail: { title: hint, text: detail, id: d.id } }));
+         });
          // Add Cluster Labels
-         svg.append("g")
+         viewport.append("g")
             .selectAll("text")
             .data(types)
             .join("text")
@@ -83,6 +125,10 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
             .attr("font-weight", "bold");
 
          simulation.on("tick", () => {
+             nodes.forEach((d: any) => {
+                d.x = Math.max(20, Math.min(width - 20, d.x));
+                d.y = Math.max(20, Math.min(height - 20, d.y));
+             });
              node
                 .attr("cx", (d: any) => d.x)
                 .attr("cy", (d: any) => d.y);
@@ -95,31 +141,55 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
         const sorted = [...hyperbits].sort((a, b) => a.timestamp - b.timestamp);
         const margin = 50;
         const timeScale = (i: number) => margin + (i / (sorted.length - 1 || 1)) * (width - margin * 2);
+        const minT = sorted[0]?.timestamp || 0;
+        const maxT = sorted[sorted.length - 1]?.timestamp || 1;
+        const span = Math.max(1, maxT - minT);
+        const cutoff = Math.max(0.01, timeProgress);
+        const visible = sorted.filter(d => ((d.timestamp - minT) / span) <= cutoff);
+        const cursorIndex = Math.floor((sorted.length - 1) * cutoff);
         
         // Draw Axis
-        svg.append("line")
+        viewport.append("line")
             .attr("x1", margin)
             .attr("y1", height/2)
             .attr("x2", width - margin)
             .attr("y2", height/2)
             .attr("stroke", "#475569")
             .attr("stroke-width", 2);
+
+        // Cursor
+        viewport.append("line")
+            .attr("x1", timeScale(cursorIndex))
+            .attr("y1", height/2 - 30)
+            .attr("x2", timeScale(cursorIndex))
+            .attr("y2", height/2 + 30)
+            .attr("stroke", "#0ea5e9")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "4 4")
+            .attr("opacity", 0.8);
             
-        svg.append("g")
+        viewport.append("g")
             .selectAll("circle")
             .data(sorted)
             .join("circle")
             .attr("cx", (d, i) => timeScale(i))
             .attr("cy", height/2)
-            .attr("r", 6)
+            .attr("r", (d: any) => {
+                const e = Math.max(0, Math.min(1, d.energy || 0.3));
+                return visible.includes(d) ? 4 + e * 6 : 3;
+            })
             .attr("fill", d => TYPE_COLORS[d.type as keyof typeof TYPE_COLORS])
+            .attr("opacity", (d: any) => {
+                const base = 0.25 + Math.max(0.2, Math.min(1, d.energy || 0.3)) * 0.5;
+                return visible.includes(d) ? base : 0.2;
+            })
             .append("title")
             .text(d => d.content);
             
         // Labels (alternate up/down)
-        svg.append("g")
+        viewport.append("g")
             .selectAll("text")
-            .data(sorted)
+            .data(visible)
             .join("text")
             .attr("x", (d, i) => timeScale(i))
             .attr("y", (d, i) => height/2 + (i % 2 === 0 ? -20 : 30))
@@ -128,6 +198,97 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
             .attr("fill", "#94a3b8")
             .attr("font-size", "9px");
             
+        return;
+    }
+
+    // --- MODE: OUROBOROS SPIRAL (v4.0) ---
+    if (mode === 'OUROBOROS') {
+        const sorted = [...hyperbits].sort((a, b) => a.timestamp - b.timestamp);
+        const minT = sorted[0]?.timestamp || 0;
+        const maxT = sorted[sorted.length - 1]?.timestamp || 1;
+        const span = Math.max(1, maxT - minT);
+        const cutoff = Math.max(0.02, timeProgress);
+
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const maxRadius = Math.min(width, height) * 0.42;
+        const minRadius = Math.min(width, height) * 0.08;
+        const turns = 4.5;
+
+        const positionFor = (t: number) => {
+          const angle = t * turns * Math.PI * 2;
+          const radius = minRadius + t * (maxRadius - minRadius);
+          return {
+            x: centerX + radius * Math.cos(angle),
+            y: centerY + radius * Math.sin(angle),
+          };
+        };
+
+        const nodes = sorted.map((d) => {
+          const t = (d.timestamp - minT) / span;
+          const pos = positionFor(t);
+          return { ...d, t, x: pos.x, y: pos.y };
+        });
+
+        const visible = nodes.filter((d) => d.t <= cutoff);
+        const pathLine = line<any>().x((d) => d.x).y((d) => d.y);
+
+        // Ouroboros ring
+        viewport.append("circle")
+          .attr("cx", centerX)
+          .attr("cy", centerY)
+          .attr("r", minRadius)
+          .attr("fill", "none")
+          .attr("stroke", "#1f2937")
+          .attr("stroke-width", 1.2)
+          .attr("opacity", 0.8);
+
+        // Spiral path (visible)
+        viewport.append("path")
+          .attr("d", pathLine(visible))
+          .attr("fill", "none")
+          .attr("stroke", "#334155")
+          .attr("stroke-width", 1.3)
+          .attr("opacity", 0.85);
+
+        // Nodes
+        const nodeGroup = viewport.append("g")
+          .selectAll("circle")
+          .data(nodes)
+          .join("circle")
+          .attr("cx", (d) => d.x)
+          .attr("cy", (d) => d.y)
+          .attr("r", (d: any) => {
+              const e = Math.max(0, Math.min(1, d.energy || 0.3));
+              return d.t <= cutoff ? 3.5 + e * 6.5 : 3;
+          })
+          .attr("fill", (d) => TYPE_COLORS[d.type as keyof typeof TYPE_COLORS])
+          .attr("opacity", (d: any) => {
+              const base = 0.25 + Math.max(0.2, Math.min(1, d.energy || 0.3)) * 0.5;
+              return d.t <= cutoff ? base : 0.2;
+          })
+          .append("title")
+          .text((d) => d.content);
+
+        nodeGroup.on("click", (_event: any, d: any) => {
+          if (!d || !d.content) return;
+          const detail = `«${d.content}»\n${language === 'ru' ? 'Энергия' : 'Energy'}: ${Math.round((d.energy || 0) * 100)}% • ${d.type}`;
+          const hint = language === 'ru' ? 'Узел' : 'Node';
+          window.dispatchEvent(new CustomEvent('muza:node:focus', { detail: { title: hint, text: detail, id: d.id } }));
+        });
+
+        // Head marker
+        const head = visible[visible.length - 1];
+        if (head) {
+          viewport.append("circle")
+            .attr("cx", head.x)
+            .attr("cy", head.y)
+            .attr("r", 12)
+            .attr("fill", "none")
+            .attr("stroke", "#22d3ee")
+            .attr("stroke-width", 2)
+            .attr("opacity", 0.9);
+        }
         return;
     }
 
@@ -143,12 +304,12 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
     }
 
     const simulation = forceSimulation(nodes as any)
-      .force("link", forceLink(links).id((d: any) => d.id).distance(100))
-      .force("charge", forceManyBody().strength(-200))
+      .force("link", forceLink(links).id((d: any) => d.id).distance(80))
+      .force("charge", forceManyBody().strength(-120))
       .force("center", forceCenter(width / 2, height / 2))
-      .force("collide", forceCollide().radius(20));
+      .force("collide", forceCollide().radius(16));
 
-    const link = svg.append("g")
+    const link = viewport.append("g")
       .attr("stroke", "#334155")
       .attr("stroke-opacity", 0.6)
       .selectAll("line")
@@ -156,7 +317,7 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
       .join("line")
       .attr("stroke-width", 1);
 
-    const node = svg.append("g")
+    const node = viewport.append("g")
       .selectAll("g")
       .data(nodes)
       .join("g")
@@ -178,14 +339,27 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
       .attr("stroke-width", 1.5);
 
     node.append("text")
-      .text((d: any) => d.content.substring(0, 15) + "...")
+      .text((d: any) => (d.content ? d.content.substring(0, 15) + "..." : ""))
       .attr("x", 12)
       .attr("y", 4)
       .attr("fill", "#94a3b8")
       .attr("font-size", "10px")
       .style("pointer-events", "none");
 
+    node.append("title").text((d: any) => d.content || '');
+
+    node.on("click", (_event: any, d: any) => {
+      if (!d || !d.content) return;
+      const detail = `«${d.content}»\n${language === 'ru' ? 'Энергия' : 'Energy'}: ${Math.round((d.energy || 0) * 100)}% • ${d.type}`;
+      const hint = language === 'ru' ? 'Узел' : 'Node';
+      window.dispatchEvent(new CustomEvent('muza:node:focus', { detail: { title: hint, text: detail, id: d.id } }));
+    });
+
     simulation.on("tick", () => {
+      nodes.forEach((d: any) => {
+        d.x = Math.max(20, Math.min(width - 20, d.x));
+        d.y = Math.max(20, Math.min(height - 20, d.y));
+      });
       link
         .attr("x1", (d: any) => d.source.x)
         .attr("y1", (d: any) => d.source.y)
@@ -212,7 +386,7 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
       d.fy = null;
     }
 
-  }, [hyperbits, mode]);
+  }, [hyperbits, mode, timeProgress]);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-slate-950">
@@ -262,7 +436,41 @@ export const Space = React.memo<SpaceProps>(({ hyperbits, language }) => {
             >
                 <Clock className="w-4 h-4" />
             </button>
+            <button 
+                onClick={() => setMode('OUROBOROS')} 
+                className={`p-2 rounded hover:bg-slate-700 ${mode === 'OUROBOROS' ? 'bg-emerald-900/50 text-emerald-400' : 'text-slate-400'}`}
+                title={language === 'ru' ? 'Уроборос‑спираль времени' : 'Ouroboros Time Spiral'}
+            >
+                <Infinity className="w-4 h-4" />
+            </button>
         </div>
+
+        {isTimeMode && (
+          <div className="mt-1 p-2 rounded-lg border border-slate-700 bg-slate-900/60">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsPlaying((v) => !v)}
+                className="p-1 rounded hover:bg-slate-800 text-slate-300"
+                title={isPlaying ? (language === 'ru' ? 'Пауза' : 'Pause') : (language === 'ru' ? 'Проиграть' : 'Play')}
+              >
+                {isPlaying ? <CirclePause className="w-4 h-4" /> : <CirclePlay className="w-4 h-4" />}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.001}
+                value={timeProgress}
+                onChange={(e) => setTimeProgress(Number(e.target.value))}
+                className="w-40 accent-cyan-400"
+              />
+              <span className="text-[10px] text-slate-400 w-10 text-right">{Math.round(timeProgress * 100)}%</span>
+            </div>
+            <div className="text-[10px] text-slate-500 mt-1">
+              {language === 'ru' ? 'Время/эволюция' : 'Time/Evolution'}
+            </div>
+          </div>
+        )}
       </div>
       
       <svg ref={svgRef} className="w-full h-full" />

@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Бриф для резюме</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --card: rgba(255, 255, 255, 0.06);
+        --stroke: rgba(255, 255, 255, 0.14);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.72);
+        --a: #7c5cff;
+        --ok: #22c55e;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background: radial-gradient(900px 900px at 15% 15%, rgba(124, 92, 255, 0.22), transparent 60%),
+          linear-gradient(160deg, #07101f, var(--bg));
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 18px 14px 48px;
+      }
+      header {
+        padding: 10px 6px 6px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: 0.2px;
+      }
+      .sub {
+        margin-top: 8px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+      .card {
+        margin-top: 14px;
+        border: 1px solid var(--stroke);
+        background: var(--card);
+        border-radius: 18px;
+        padding: 14px 14px;
+      }
+      label {
+        display: block;
+        font-weight: 850;
+        margin: 12px 0 6px;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--text);
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+      }
+      textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      button {
+        cursor: pointer;
+        border-radius: 14px;
+        border: 1px solid rgba(124, 92, 255, 0.35);
+        background: rgba(124, 92, 255, 0.18);
+        color: var(--text);
+        padding: 10px 12px;
+        font-weight: 900;
+      }
+      button.secondary {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .ok {
+        color: rgba(34, 197, 94, 0.95);
+        font-weight: 900;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.25);
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.35;
+        font-size: 13px;
+      }
+      .hint {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Бриф для резюме (собери данные за 2–3 минуты)</h1>
+        <div class="sub">
+          Это локальная страница: ничего никуда не отправляет. В конце получится готовый текст, который можно скопировать и
+          отправить исполнителю в Авито/VK/TG.
+        </div>
+      </header>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <label for="role">Желаемая должность</label>
+            <input id="role" placeholder="Напр: оператор поддержки, менеджер продаж, администратор" />
+          </div>
+          <div>
+            <label for="city">Город</label>
+            <input id="city" placeholder="Напр: Москва" />
+          </div>
+        </div>
+
+        <label for="level">Уровень/стаж</label>
+        <select id="level">
+          <option value="junior">Без опыта / начинающий</option>
+          <option value="mid">1–3 года</option>
+          <option value="senior">3+ лет</option>
+          <option value="other">Другое</option>
+        </select>
+
+        <label for="exp">Опыт (3–7 пунктов)</label>
+        <textarea id="exp" placeholder="Где работал(а), что делал(а), чем помог(ла) компании"></textarea>
+
+        <label for="ach">Результаты / цифры (если есть)</label>
+        <textarea id="ach" placeholder="Напр: +20% продаж, 50 обращений/день, сократил(а) время ответа до 2 минут"></textarea>
+
+        <label for="skills">Навыки / инструменты</label>
+        <textarea id="skills" placeholder="Напр: Excel, CRM, переговоры, переписка, обработка возражений"></textarea>
+
+        <div class="row">
+          <div>
+            <label for="edu">Образование/курсы</label>
+            <input id="edu" placeholder="Напр: колледж/курсы" />
+          </div>
+          <div>
+            <label for="format">Формат результата</label>
+            <select id="format">
+              <option value="pdf_doc">PDF + DOC</option>
+              <option value="doc">DOC</option>
+              <option value="pdf">PDF</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="vac">Вакансия (ссылка/текст)</label>
+        <textarea id="vac" placeholder="Вставь ссылку или ключевые требования вакансии"></textarea>
+
+        <label for="contacts">Контакты (как указать в резюме)</label>
+        <textarea id="contacts" placeholder="Имя, телефон, почта, город (без паспортов и лишних данных)"></textarea>
+
+        <div class="actions">
+          <button id="make">Собрать бриф</button>
+          <button class="secondary" id="copy">Скопировать</button>
+          <button class="secondary" id="clear">Очистить</button>
+          <span id="status" class="hint"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <label>Текст для отправки исполнителю</label>
+        <pre id="out">Заполни поля и нажми “Собрать бриф”.</pre>
+        <div class="hint">
+          Подсказка для оффера: “Сделаю сегодня за 60–90 минут. Цена 1000₽. 1 правка включена. Оплата по СБП (Озон Банк).”
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const fields = ["role", "city", "level", "exp", "ach", "skills", "edu", "format", "vac", "contacts"];
+
+      function val(id) {
+        return String($(id).value ?? "").trim();
+      }
+
+      function build() {
+        const role = val("role");
+        const city = val("city");
+        const level = $("level").value;
+        const exp = val("exp");
+        const ach = val("ach");
+        const skills = val("skills");
+        const edu = val("edu");
+        const format = $("format").value;
+        const vac = val("vac");
+        const contacts = val("contacts");
+
+        const levelLabel =
+          level === "junior" ? "Без опыта / начинающий" : level === "mid" ? "1–3 года" : level === "senior" ? "3+ лет" : "Другое";
+        const formatLabel = format === "pdf_doc" ? "PDF + DOC" : format === "pdf" ? "PDF" : "DOC";
+
+        const parts = [];
+        parts.push("БРИФ НА РЕЗЮМЕ");
+        parts.push(`Должность: ${role || "—"}`);
+        parts.push(`Город: ${city || "—"}`);
+        parts.push(`Стаж/уровень: ${levelLabel}`);
+        parts.push(`Формат: ${formatLabel}`);
+        parts.push("");
+        parts.push("Опыт:");
+        parts.push(exp || "—");
+        parts.push("");
+        parts.push("Результаты/цифры:");
+        parts.push(ach || "—");
+        parts.push("");
+        parts.push("Навыки/инструменты:");
+        parts.push(skills || "—");
+        parts.push("");
+        parts.push(`Образование/курсы: ${edu || "—"}`);
+        parts.push("");
+        parts.push("Вакансия (ссылка/требования):");
+        parts.push(vac || "—");
+        parts.push("");
+        parts.push("Контакты (как указать в резюме):");
+        parts.push(contacts || "—");
+
+        return parts.join("\n");
+      }
+
+      $("make").addEventListener("click", () => {
+        $("out").textContent = build();
+        $("status").innerHTML = '<span class="ok">Готово.</span>';
+      });
+
+      $("copy").addEventListener("click", async () => {
+        const text = $("out").textContent;
+        if (!text || text.includes("Заполни поля")) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          $("status").innerHTML = '<span class="ok">Скопировано.</span>';
+        } catch {
+          // fallback
+          const sel = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents($("out"));
+          sel.removeAllRanges();
+          sel.addRange(range);
+          $("status").textContent = "Выделено. Нажми Cmd+C.";
+        }
+      });
+
+      $("clear").addEventListener("click", () => {
+        for (const f of fields) $(f).value = "";
+        $("out").textContent = "Заполни поля и нажми “Собрать бриф”.";
+        $("status").textContent = "";
+      });
+    </script>
+  </body>
+</html>
+

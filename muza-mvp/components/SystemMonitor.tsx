@@ -13,43 +13,70 @@ interface SystemMonitorProps {
 const MiniGraph: React.FC<{ data: number[], color: string, height?: number }> = ({ data, color, height = 40 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     useEffect(() => {
-        const ctx = canvasRef.current?.getContext('2d');
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
         if (!ctx) return;
-        const w = ctx.canvas.width;
-        const h = ctx.canvas.height;
+        const w = canvas.clientWidth || canvas.width || 120;
+        const h = height;
+        if (canvas.width !== w) canvas.width = w;
+        if (canvas.height !== h) canvas.height = h;
         ctx.clearRect(0,0,w,h);
         
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        data.forEach((val, i) => {
-            const x = (i / (data.length - 1)) * w;
-            const y = h - (val / 100) * h;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        });
+        if (data.length < 2) {
+            ctx.moveTo(0, h - 1);
+            ctx.lineTo(w, h - 1);
+        } else {
+            data.forEach((val, i) => {
+                const x = (i / (data.length - 1)) * w;
+                const y = h - (val / 100) * h;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+        }
         ctx.stroke();
         
         ctx.lineTo(w, h);
         ctx.lineTo(0, h);
-        ctx.fillStyle = color + '33'; 
+        ctx.fillStyle = color + '55'; 
         ctx.fill();
     }, [data, color]);
     return <canvas ref={canvasRef} width={120} height={height} className="w-full" />;
 };
 
+const MetricCard: React.FC<{ label: string; value: string; color: string; icon: React.ElementType; history?: number[]; footer?: React.ReactNode }> = ({ label, value, color, icon: Icon, history, footer }) => (
+    <div className="space-y-1">
+        <div className="flex justify-between text-[10px] text-slate-400 uppercase">
+            <span className="flex items-center gap-1">
+                <Icon className="w-3 h-3" /> {label}
+            </span>
+            <span className="font-mono" style={{ color }}>{value}</span>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-800 rounded relative overflow-hidden">
+            {history ? <MiniGraph data={history} color={color} /> : <div className="h-10" />}
+        </div>
+        {footer ? <div className="pt-2">{footer}</div> : null}
+    </div>
+);
+
 export const SystemMonitor: React.FC<SystemMonitorProps> = ({ language, systemLogs }) => {
-  const [activeTab, setActiveTab] = useState<'LOGS' | 'HARDWARE' | 'KERNEL'>('HARDWARE');
+  const [activeTab, setActiveTab] = useState<'LOGS' | 'HARDWARE' | 'KERNEL' | 'BRIDGE'>('HARDWARE');
+  const [isCompact, setIsCompact] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
   
   const [hwState, setHwState] = useState<HardwareState>(detectHardware());
   const [history, setHistory] = useState<{cpu: number[], ram: number[], gpu: number[], temp: number[]}>({
-      cpu: new Array(20).fill(0),
-      ram: new Array(20).fill(0),
-      gpu: new Array(20).fill(0),
-      temp: new Array(20).fill(0)
+      cpu: new Array(24).fill(0),
+      ram: new Array(24).fill(0),
+      gpu: new Array(24).fill(0),
+      temp: new Array(24).fill(0)
   });
-  const [processes, setProcesses] = useState<ActiveProcess[]>([]);
+    const [bridgeStatus, setBridgeStatus] = useState<{ ok: boolean; uptimeSec?: number; pid?: number | null }>({ ok: false });
   const t = TRANSLATIONS[language].systemMonitor;
+  const isRu = language === 'ru';
+
 
   useEffect(() => {
       const interval = setInterval(() => {
@@ -63,9 +90,28 @@ export const SystemMonitor: React.FC<SystemMonitorProps> = ({ language, systemLo
               gpu: [...prev.gpu.slice(1), updated.gpu.load],
               temp: [...prev.temp.slice(1), (updated.gpu.temperature / 100) * 100] // Normalize for graph
           }));
-      }, 1000);
+      }, 2000);
       return () => clearInterval(interval);
-  }, []); 
+  }, []);
+
+  useEffect(() => {
+      let cancelled = false;
+      const pollBridge = async () => {
+          try {
+              const res = await fetch('http://127.0.0.1:5050/api/status');
+              if (!res.ok) throw new Error('bad status');
+              const data = await res.json();
+              if (cancelled) return;
+              setBridgeStatus({ ok: true, uptimeSec: data.uptime_sec, pid: data.pid ?? null });
+          } catch {
+              if (cancelled) return;
+              setBridgeStatus({ ok: false });
+          }
+      };
+      pollBridge();
+      const interval = setInterval(pollBridge, 4000);
+      return () => { cancelled = true; clearInterval(interval); };
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'LOGS') logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -92,62 +138,72 @@ export const SystemMonitor: React.FC<SystemMonitorProps> = ({ language, systemLo
              <button onClick={() => setActiveTab('LOGS')} className={`flex-1 py-2 text-[10px] font-bold uppercase flex items-center justify-center gap-1 ${activeTab === 'LOGS' ? 'bg-slate-800 text-green-400' : 'text-slate-500 hover:text-white'}`}>
                 <Terminal className="w-3 h-3" /> {t.tabs.logs}
              </button>
+             <button onClick={() => setActiveTab('BRIDGE')} className={`flex-1 py-2 text-[10px] font-bold uppercase flex items-center justify-center gap-1 ${activeTab === 'BRIDGE' ? 'bg-slate-800 text-emerald-400' : 'text-slate-500 hover:text-white'}`}>
+                <Radio className="w-3 h-3" /> {t.tabs.bridge}
+             </button>
+             <button
+                onClick={() => setIsCompact(!isCompact)}
+                className="px-2 text-[10px] text-slate-500 hover:text-white border-l border-slate-800 flex items-center gap-1"
+                title={isRu ? 'Мини‑режим' : 'Compact mode'}
+             >
+                {isCompact ? (isRu ? 'Развернуть' : 'Expand') : (isRu ? 'Свернуть' : 'Compact')}
+             </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto relative scrollbar-thin bg-black/80">
+        <div className={`flex-1 overflow-y-auto relative scrollbar-thin bg-black/80 ${isCompact ? 'text-[9px]' : ''}`}>
             
             {activeTab === 'HARDWARE' && (
-                <div className="p-3 space-y-4">
-                    {/* CPU */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-400 uppercase">
-                            <span className="flex items-center gap-1"><Cpu className="w-3 h-3" /> {t.labels?.cpu || 'CPU'}</span>
-                            <span className="text-cyan-400">{hwState.cpu.usage.toFixed(1)}%</span>
-                        </div>
-                        <div className="h-10 bg-slate-900/50 border border-slate-800 rounded relative overflow-hidden">
-                            <MiniGraph data={history.cpu} color="#22d3ee" />
-                        </div>
+                <div className={`p-3 ${isCompact ? 'space-y-2' : 'space-y-4'}`}>
+                    <div className="text-[9px] text-slate-600 uppercase tracking-widest">
+                        {isRu ? 'Показатели — оценка браузера' : 'Metrics are browser estimates'}
                     </div>
 
-                    {/* GPU & Thermal */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-400 uppercase">
-                            <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {t.labels?.gpuLoad || 'GPU Load'}</span>
-                            <span className="text-yellow-400">{hwState.gpu.load.toFixed(0)}%</span>
-                        </div>
-                        <div className="h-10 bg-slate-900/50 border border-slate-800 rounded relative overflow-hidden">
-                            <MiniGraph data={history.gpu} color="#facc15" />
-                        </div>
-                        
-                        <div className="flex justify-between mt-2">
-                            <div className="bg-slate-900/80 p-2 rounded border border-slate-800 flex-1 mr-2">
-                                <div className="text-[9px] text-slate-500 uppercase flex items-center gap-1">
-                                    <Thermometer className="w-3 h-3 text-red-400" /> {t.labels?.temp || 'Temp'}
+                    <MetricCard
+                        label={t.labels?.cpu || 'CPU'}
+                        value={`${hwState.cpu.usage.toFixed(1)}%`}
+                        color="#22d3ee"
+                        icon={Cpu}
+                        history={history.cpu}
+                    />
+
+                    <MetricCard
+                        label={t.labels?.gpuLoad || 'GPU Load'}
+                        value={`${hwState.gpu.load.toFixed(0)}%`}
+                        color="#facc15"
+                        icon={Activity}
+                        history={history.gpu}
+                        footer={
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-slate-900/60 p-2 rounded border border-slate-800">
+                                    <div className="text-[9px] text-slate-500 uppercase flex items-center gap-1">
+                                        <Thermometer className="w-3 h-3 text-red-400" /> {t.labels?.temp || 'Temp'}
+                                    </div>
+                                    <div className="text-sm font-bold text-red-300">{hwState.gpu.temperature.toFixed(1)}°C</div>
                                 </div>
-                                <div className="text-sm font-bold text-red-300">{hwState.gpu.temperature.toFixed(1)}°C</div>
-                            </div>
-                            <div className="bg-slate-900/80 p-2 rounded border border-slate-800 flex-1">
-                                <div className="text-[9px] text-slate-500 uppercase flex items-center gap-1">
-                                    <Zap className="w-3 h-3 text-orange-400" /> {t.labels?.vram || 'VRAM'}
+                                <div className="bg-slate-900/60 p-2 rounded border border-slate-800">
+                                    <div className="text-[9px] text-slate-500 uppercase flex items-center gap-1">
+                                        <Zap className="w-3 h-3 text-orange-400" /> {t.labels?.vram || 'VRAM'}
+                                    </div>
+                                    <div className="text-sm font-bold text-orange-300">{hwState.gpu.vramEstimated} MB</div>
                                 </div>
-                                <div className="text-sm font-bold text-orange-300">{hwState.gpu.vramEstimated} MB</div>
+                                <div className="col-span-2 text-[9px] text-slate-600 truncate">
+                                    {(t.labels?.renderer || 'Renderer')}: {hwState.gpu.renderer}
+                                </div>
                             </div>
-                        </div>
-                        <div className="text-[9px] text-slate-600 truncate mt-1">
-                            {(t.labels?.renderer || 'Renderer')}: {hwState.gpu.renderer}
-                        </div>
+                        }
+                    />
+
+                    <div className="text-[9px] text-slate-600">
+                        {isRu ? 'ГП — нагрузка, ВРАМ — видеопамять.' : 'GPU load ≠ VRAM (video memory).'}
                     </div>
 
-                    {/* RAM */}
-                    <div className="space-y-1 pt-2 border-t border-slate-800">
-                        <div className="flex justify-between text-[10px] text-slate-400 uppercase">
-                            <span className="flex items-center gap-1"><CircuitBoard className="w-3 h-3" /> {t.labels?.ram || 'RAM'}</span>
-                            <span className="text-purple-400">{hwState.ram.used.toFixed(1)} / {hwState.ram.total} GB</span>
-                        </div>
-                        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${(hwState.ram.used / hwState.ram.total) * 100}%` }}></div>
-                        </div>
-                    </div>
+                    <MetricCard
+                        label={t.labels?.ram || 'RAM'}
+                        value={`${hwState.ram.used.toFixed(1)} / ${hwState.ram.total} GB`}
+                        color="#a855f7"
+                        icon={CircuitBoard}
+                        history={history.ram}
+                    />
                 </div>
             )}
 
@@ -189,6 +245,47 @@ export const SystemMonitor: React.FC<SystemMonitorProps> = ({ language, systemLo
                         </div>
                     ))}
                     <div ref={logsEndRef} />
+                </div>
+            )}
+            {activeTab === 'BRIDGE' && (
+                <div className="p-3 space-y-3">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">{t.bridgeTitle}</div>
+                    <div className="flex items-center gap-2">
+                        <div className={`px-2 py-1 rounded-md text-[10px] font-bold ${bridgeStatus.ok ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/10 text-red-300 border border-red-500/40'}`}>
+                            {bridgeStatus.ok ? t.bridgeStatusOnline : t.bridgeStatusOffline}
+                        </div>
+                        {bridgeStatus.ok && (
+                            <div className="text-[10px] text-slate-500">
+                                PID: {bridgeStatus.pid ?? '—'} • {Math.round(bridgeStatus.uptimeSec || 0)}s
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => window.open('http://127.0.0.1:5050/', '_blank')}
+                            className="px-3 py-2 text-[10px] rounded bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700"
+                        >
+                            {t.bridgeOpen}
+                        </button>
+                        <button
+                            onClick={() => fetch('http://127.0.0.1:5050/api/status').then(r => r.json()).then(d => setBridgeStatus({ ok: true, uptimeSec: d.uptime_sec, pid: d.pid ?? null })).catch(() => setBridgeStatus({ ok: false }))}
+                            className="px-3 py-2 text-[10px] rounded bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700"
+                        >
+                            {t.bridgeRefresh}
+                        </button>
+                        <button
+                            onClick={() => {
+                                const id = localStorage.getItem('muza_bridge_ext');
+                                if (id) window.open(`chrome-extension://${id}/popup.html`, '_blank');
+                            }}
+                            className="px-3 py-2 text-[10px] rounded bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700"
+                        >
+                            {isRu ? 'Расширение' : 'Extension'}
+                        </button>
+                    </div>
+                    <div className="text-[9px] text-slate-600">
+                        {isRu ? 'Если мост выключен — запустите локальный сервер.' : 'Start the local server if offline.'}
+                    </div>
                 </div>
             )}
         </div>

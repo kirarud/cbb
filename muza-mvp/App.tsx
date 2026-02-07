@@ -7,6 +7,7 @@ import { SystemMonitor } from './components/SystemMonitor';
 import { CodeLab } from './pages/CodeLab';
 import { Wiki } from './pages/Wiki';
 import { Deploy } from './pages/Deploy';
+import { BridgeUI } from './pages/BridgeUI';
 import { Auth } from './pages/Auth';
 import { Settings } from './pages/Settings';
 import { NeuralStudio } from './pages/NeuralStudio';
@@ -23,7 +24,7 @@ import { TRANSLATIONS, THEMES } from './constants';
 import { loadLocalData, saveLocalData } from './services/storageService';
 import { synthService } from './services/synthService';
 import { processExperience } from './services/progressionService';
-import { ChevronDown, ChevronUp, Gift, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Gift, Loader2 } from 'lucide-react';
 
 const INITIAL_STATE: MuzaState = {
   energyLevel: 0.8,
@@ -132,7 +133,7 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('ru'); 
   
   const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(true);
   const [lastSaved, setLastSaved] = useState<number>(Date.now());
 
   const [muzaState, setMuzaState] = useState<MuzaState>(INITIAL_STATE);
@@ -141,7 +142,9 @@ export default function App() {
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
   
   const [isThinking, setIsThinking] = useState(false);
-  const [isMonitorCollapsed, setIsMonitorCollapsed] = useState(false);
+  const [isMonitorCollapsed, setIsMonitorCollapsed] = useState(true);
+  const [isHudHidden, setIsHudHidden] = useState(false);
+  const [nodeFocus, setNodeFocus] = useState<{ title: string; text: string; id?: string } | null>(null);
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState<{amount: number, type: string} | null>(null);
 
   const t = TRANSLATIONS[language];
@@ -162,6 +165,16 @@ export default function App() {
       viewModeRef.current = viewMode;
       userRef.current = currentUser;
   }, [muzaState, messages, hyperbits, systemLogs, viewMode, currentUser]);
+
+  useEffect(() => {
+      const handler = (e: any) => {
+          if (!e?.detail) return;
+          setNodeFocus(e.detail);
+          setTimeout(() => setNodeFocus(null), 4000);
+      };
+      window.addEventListener('muza:node:focus', handler as any);
+      return () => window.removeEventListener('muza:node:focus', handler as any);
+  }, []);
 
   const addSystemLog = useCallback((message: string, source: SystemLog['source'] = 'KERNEL', type: SystemLog['type'] = 'INFO') => {
       const newLog: SystemLog = {
@@ -597,6 +610,17 @@ export default function App() {
         {viewMode === 'MATRIX' && <div className="absolute inset-0 z-50 bg-black animate-in fade-in"><MatrixVision state={muzaState} hyperbits={hyperbits} language={language} /><button onClick={() => setViewMode('FOCUS')} className="absolute top-6 right-6 px-4 py-2 bg-black/60 rounded-lg text-white z-50">{t.common.close}</button></div>}
         {viewMode === 'WIKI' && <div className="absolute inset-0 z-50 bg-slate-950 animate-in fade-in overflow-y-auto"><Wiki language={language} /><button onClick={() => setViewMode('FOCUS')} className="fixed top-6 right-6 px-4 py-2 bg-slate-800 rounded-lg text-white z-50">{t.common.close}</button></div>}
         {viewMode === 'DEPLOY' && <div className="absolute inset-0 z-50 bg-slate-950 animate-in fade-in overflow-y-auto"><Deploy language={language} onLog={(msg, type) => addSystemLog(msg, 'KERNEL', type)} messages={messages} hyperbits={hyperbits} systemLogs={systemLogs} currentUser={currentUser} /><button onClick={() => setViewMode('FOCUS')} className="fixed top-6 right-6 px-4 py-2 bg-slate-800 rounded-lg text-white z-50">{t.common.return}</button></div>}
+        {viewMode === 'BRIDGE_UI' && <div className="absolute inset-0 z-50 bg-black animate-in fade-in"><BridgeUI language={language} /><button onClick={() => setViewMode('FOCUS')} className="fixed top-6 right-6 px-4 py-2 bg-slate-800 rounded-lg text-white z-50">{t.common.close}</button></div>}
+        {viewMode === 'LEAD_INBOX' && (
+          <div className="absolute inset-0 z-50 bg-black animate-in fade-in">
+            <iframe
+              src="http://127.0.0.1:8787/"
+              className="w-full h-full border-0"
+              title={language === 'ru' ? 'Кабинет заявок' : 'Lead Inbox'}
+            />
+            <button onClick={() => setViewMode('FOCUS')} className="fixed top-6 right-6 px-4 py-2 bg-slate-800 rounded-lg text-white z-50">{t.common.close}</button>
+          </div>
+        )}
         {viewMode === 'SETTINGS' && <div className="absolute inset-0 z-50 bg-slate-950 animate-in fade-in overflow-y-auto"><Settings state={muzaState} setMuzaState={setMuzaState} onLog={(msg) => addSystemLog(msg, 'USER', 'INFO')} currentUser={currentUser} language={language} /><button onClick={() => setViewMode('FOCUS')} className="fixed top-6 right-6 px-4 py-2 bg-slate-800 rounded-lg text-white z-50">{t.common.return}</button></div>}
         {/* Updated Neural Studio prop: updateHyperbit */}
         {viewMode === 'NEURAL_STUDIO' && <div className="absolute inset-0 z-50 bg-slate-950 animate-in fade-in overflow-y-auto"><NeuralStudio state={muzaState} setMuzaState={setMuzaState} onLog={(msg) => addSystemLog(msg, 'AI', 'SUCCESS')} language={language} hyperbits={hyperbits} updateHyperbit={(id, u) => setHyperbits(prev => prev.map(h => h.id===id ? {...h, ...u} : h))} /><button onClick={() => setViewMode('FOCUS')} className="fixed top-6 right-6 px-4 py-2 bg-slate-800 rounded-lg text-white z-50">{t.common.return}</button></div>}
@@ -605,17 +629,46 @@ export default function App() {
             <div className={`flex flex-col h-full border-r border-slate-800/50 transition-all duration-300 ${isSplitMode ? 'w-full md:w-1/2' : 'w-full'} relative`}>
                 <GenesisRuntime patches={muzaState.genesisPatches || []} target="sidebar" context={{ state: muzaState, setState: setMuzaState }} />
                 <GenesisRuntime patches={muzaState.genesisPatches || []} target="chat_header" context={{ state: muzaState, setState: setMuzaState }} />
-                <Chat muzaState={muzaState} setMuzaState={setMuzaState} addHyperbit={addHyperbit} messages={messages} addMessage={addMessage} language={language} onThinkingChange={setIsThinking} onCommand={handleAiCommand} />
+                <Chat muzaState={muzaState} setMuzaState={setMuzaState} addHyperbit={addHyperbit} messages={messages} addMessage={addMessage} setMessages={setMessages} language={language} onThinkingChange={setIsThinking} onCommand={handleAiCommand} />
             </div>
             {isSplitMode && <div className="hidden md:flex w-1/2 h-full bg-slate-925 flex-col animate-in slide-in-from-right border-l border-slate-800 shadow-2xl z-20"><CodeLab language={language} onLog={(msg, type) => addSystemLog(msg, 'KERNEL', type)} currentUser={currentUser} /></div>}
         </div>
 
         {!isSplitMode && !['IMMERSIVE_SPACE','WIKI','DEPLOY','SETTINGS','NEURAL_STUDIO', 'MATRIX', 'EVOLUTION', 'MUSIC_LAB', 'DESIGN_STUDIO', 'SYNESTHESIA', 'DATA_VAULT'].includes(viewMode) && (
-            <div className="hidden xl:flex w-80 flex-col border-l border-slate-800 shrink-0 z-10 transition-all duration-300" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'rgba(255,255,255,0.1)' }}>
-                <div className={`border-b border-slate-800 relative transition-all duration-300 ${isMonitorCollapsed ? 'h-[90%]' : 'h-64'}`}><VisualCortex hyperbits={hyperbits} language={language} isThinking={isThinking} /></div>
-                <div className={`flex-1 min-h-0 relative flex flex-col transition-all duration-300 ${isMonitorCollapsed ? 'h-[10%]' : ''}`}>
-                    <button onClick={() => setIsMonitorCollapsed(!isMonitorCollapsed)} className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 rounded-full p-0.5 z-20 hover:bg-slate-700 text-slate-400">{isMonitorCollapsed ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}</button>
-                    {!isMonitorCollapsed && <SystemMonitor language={language} systemLogs={systemLogs} />}
+            isHudHidden ? (
+                <div className="hidden lg:flex w-6 flex-col items-center justify-center border-l border-slate-800/60 bg-slate-950/80">
+                    <button
+                        onClick={() => setIsHudHidden(false)}
+                        className="p-1 rounded-full bg-slate-800 border border-slate-600 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        aria-label={language === 'ru' ? 'Показать панель' : 'Show panel'}
+                        title={language === 'ru' ? 'Показать панель' : 'Show panel'}
+                    >
+                        <ChevronLeft className="w-3 h-3" />
+                    </button>
+                </div>
+            ) : (
+                <div className="hidden lg:flex w-80 flex-col border-l border-slate-800 shrink-0 z-10 transition-all duration-300 relative" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <button
+                        onClick={() => setIsHudHidden(true)}
+                        className="absolute -left-3 top-1/2 -translate-y-1/2 bg-slate-800 border border-slate-600 rounded-full p-0.5 z-20 hover:bg-slate-700 text-slate-400"
+                        aria-label={language === 'ru' ? 'Скрыть панель' : 'Hide panel'}
+                        title={language === 'ru' ? 'Скрыть панель' : 'Hide panel'}
+                    >
+                        <ChevronRight className="w-3 h-3" />
+                    </button>
+                    <div className={`border-b border-slate-800 relative transition-all duration-300 ${isMonitorCollapsed ? 'h-[90%]' : 'h-64'}`}><VisualCortex hyperbits={hyperbits} language={language} isThinking={isThinking} /></div>
+                    <div className={`flex-1 min-h-0 relative flex flex-col transition-all duration-300 ${isMonitorCollapsed ? 'h-[10%]' : ''}`}>
+                        <button onClick={() => setIsMonitorCollapsed(!isMonitorCollapsed)} className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 rounded-full p-0.5 z-20 hover:bg-slate-700 text-slate-400">{isMonitorCollapsed ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}</button>
+                        {!isMonitorCollapsed && <SystemMonitor language={language} systemLogs={systemLogs} />}
+                    </div>
+                </div>
+            )
+        )}
+        {nodeFocus && (
+            <div className="fixed bottom-4 right-4 z-[999] max-w-xs">
+                <div className="bg-slate-900/90 border border-cyan-500/40 rounded-xl p-3 shadow-2xl backdrop-blur">
+                    <div className="text-xs text-cyan-300 font-bold">{nodeFocus.title}</div>
+                    <div className="text-[11px] text-slate-200 mt-1 whitespace-pre-wrap">{nodeFocus.text}</div>
                 </div>
             </div>
         )}

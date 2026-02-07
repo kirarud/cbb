@@ -20,12 +20,21 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
     const animationRef = useRef<number>(0);
     const t = TRANSLATIONS[language].synesthesia;
     const h = TRANSLATIONS[language].synesthesiaHints;
+    const isPlayingRef = useRef(isPlaying);
+    const emotionRef = useRef(state.activeEmotion);
+    const particlesRef = useRef<Float32Array>(new Float32Array());
+    const hyperbitsRef = useRef<HyperBit[]>(hyperbits);
 
     useEffect(() => {
         if (synthService.isGenerativeActive()) {
             setIsPlaying(true);
         }
     }, []);
+
+    useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+    useEffect(() => { emotionRef.current = state.activeEmotion; }, [state.activeEmotion]);
+    useEffect(() => { particlesRef.current = particlesData; }, [particlesData]);
+    useEffect(() => { hyperbitsRef.current = hyperbits; }, [hyperbits]);
 
     // --- PREPARE DATA PARTICLES ---
     // We map actual hyperbits to 3D points. If user has few hyperbits, we generate "potential" ones.
@@ -73,7 +82,7 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
             }
         }
         return data;
-    }, [hyperbits]);
+    }, [hyperbits.length]);
 
     useEffect(() => {
         return () => {
@@ -97,14 +106,15 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
         const ctx = canvas?.getContext('2d', { alpha: false });
         if (!canvas || !ctx) return;
 
-        const analyser = synthService.analyser;
-        const audioData = new Uint8Array(analyser ? analyser.frequencyBinCount : 0);
+        let audioData = new Uint8Array(synthService.analyser ? synthService.analyser.frequencyBinCount : 0);
 
         let time = 0;
         let rotX = 0;
         let rotY = 0;
+        let stopped = false;
 
         const render = () => {
+            if (stopped) return;
             animationRef.current = requestAnimationFrame(render);
             time += 0.01;
 
@@ -119,7 +129,11 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
             let mid = 0;
             let treble = 0;
             
-            if (isPlaying && analyser) {
+            const analyser = synthService.analyser;
+            if (isPlayingRef.current && analyser) {
+                if (audioData.length !== analyser.frequencyBinCount) {
+                    audioData = new Uint8Array(analyser.frequencyBinCount);
+                }
                 analyser.getByteFrequencyData(audioData);
                 // Simple averaging bands
                 for(let i=0; i<10; i++) bass += audioData[i];
@@ -164,16 +178,18 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
 
             // Project Particles
             const projectedParticles = [];
-            const count = particlesData.length / 7;
+            const pdata = particlesRef.current;
+            const count = pdata.length / 7;
+            const hb = hyperbitsRef.current;
 
             for (let i = 0; i < count; i++) {
                 const i7 = i * 7;
-                let x = particlesData[i7];
-                let y = particlesData[i7 + 1];
-                let z = particlesData[i7 + 2];
+                let x = pdata[i7];
+                let y = pdata[i7 + 1];
+                let z = pdata[i7 + 2];
 
                 // Audio Pulse (Expand Core)
-                const pulse = 1 + (bass * 0.3 * (i < hyperbits.length ? 1.5 : 0.5)); 
+                const pulse = 1 + (bass * 0.3 * (i < hb.length ? 1.5 : 0.5)); 
                 x *= pulse;
                 y *= pulse;
                 z *= pulse;
@@ -191,10 +207,10 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
                     
                     projectedParticles.push({
                         x: x2d, y: y2d, scale,
-                        r: particlesData[i7+3],
-                        g: particlesData[i7+4],
-                        b: particlesData[i7+5],
-                        size: particlesData[i7+6],
+                        r: pdata[i7+3],
+                        g: pdata[i7+4],
+                        b: pdata[i7+5],
+                        size: pdata[i7+6],
                         index: i
                     });
                 }
@@ -204,7 +220,7 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
             // We connect particles that are sequentially close in memory (index proximity)
             // Only for "Real" hyperbits
             ctx.lineWidth = 0.5;
-            for(let i=0; i<Math.min(projectedParticles.length, hyperbits.length) - 1; i++) {
+            for(let i=0; i<Math.min(projectedParticles.length, hb.length) - 1; i++) {
                 const p1 = projectedParticles[i];
                 const p2 = projectedParticles[i+1];
                 
@@ -249,8 +265,8 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
             });
 
             // Floating Thought Text (Only most recent)
-            if (hyperbits.length > 0) {
-                const lastBit = hyperbits[hyperbits.length - 1];
+            if (hb.length > 0) {
+                const lastBit = hb[hb.length - 1];
                 const p = projectedParticles.find(pp => pp.index === 0); // 0 is usually newest due to sorting in some logic, but here array matches hyperbits order inverted
                 // Actually in mapping above: i=0 is hyperbits[length-1]. Correct.
                 
@@ -264,7 +280,12 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
 
         };
         render();
-    }, [isPlaying, state.activeEmotion, hyperbits, particlesData]);
+        return () => {
+            stopped = true;
+            cancelAnimationFrame(animationRef.current);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
+    }, []);
 
     return (
         <div className="relative w-full h-full bg-black overflow-hidden font-mono">
@@ -285,13 +306,13 @@ export const Synesthesia: React.FC<SynesthesiaProps> = ({ state, hyperbits, lang
                     <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/20 backdrop-blur-md">
                             <Database className="w-4 h-4 text-green-400" />
-                            <span className="text-xs text-white font-bold">
+                            <span className="text-[10px] text-white font-bold whitespace-nowrap leading-none">
                                 {hyperbits.length} {t.nodesLabel}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/20 backdrop-blur-md">
                             <Activity className="w-4 h-4 text-cyan-400" />
-                            <span className="text-xs text-white font-bold">{EMOTION_LABELS[language][state.activeEmotion]}</span>
+                            <span className="text-[10px] text-white font-bold whitespace-nowrap leading-none">{EMOTION_LABELS[language][state.activeEmotion]}</span>
                         </div>
                     </div>
                 </div>

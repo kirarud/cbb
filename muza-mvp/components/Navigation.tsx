@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageSquare, Globe, Activity, BookOpen, Terminal, Languages, LogOut, Package, Sliders, Mic2, Grid, Fingerprint, Music, Palette, Zap, Archive, Wifi, WifiOff, Save } from 'lucide-react';
+import { MessageSquare, Globe, Activity, BookOpen, Terminal, Languages, LogOut, Package, Sliders, Mic2, Grid, Fingerprint, Music, Palette, Zap, Archive, Wifi, WifiOff, Save, Link, Inbox } from 'lucide-react';
 import { Language, ViewMode, NavOverrides } from '../types';
 import { THEMES, TRANSLATIONS } from '../constants';
 import { Tooltip } from './Tooltip';
@@ -62,6 +62,8 @@ export const Navigation: React.FC<NavigationProps> = ({ viewMode, setViewMode, i
     { mode: 'MATRIX', label: t.matrix, icon: Grid, tooltip: tooltips.nav_matrix || t.matrix },
     { mode: 'NEURAL_STUDIO', label: t.neural, icon: Mic2, tooltip: tooltips.nav_neural || t.neural },
     { mode: 'DEPLOY', label: getLabel('deploy', t.deploy), icon: Package, tooltip: tooltips.nav_deploy },
+    { mode: 'BRIDGE_UI', label: getLabel('bridge', t.bridge), icon: Link, tooltip: tooltips.nav_bridge || t.bridge },
+    { mode: 'LEAD_INBOX', label: isRu ? 'Заявки' : 'Leads', icon: Inbox, tooltip: isRu ? 'Кабинет заявок' : 'Lead inbox' },
     { mode: 'SETTINGS', label: t.settings, icon: Sliders, tooltip: tooltips.nav_settings || t.settings }, 
     { mode: 'WIKI', label: t.wiki, icon: BookOpen, tooltip: tooltips.nav_wiki },
   ];
